@@ -1,0 +1,67 @@
+# This file defines the equation set being solved.
+
+EqnSetLibrary = libScalar.so
+
+# Equation-specific parameters
+
+STARTBLOCK PARAM
+
+Viscosity = 1.0
+
+ENDBLOCK
+
+
+# Residual terms
+
+STARTBLOCK RESTERM
+
+nResTerm = 1
+
+TermType = Diffusion
+
+ENDBLOCK
+
+
+#  Initial condition
+
+STARTBLOCK IC
+
+ICType = FullState
+Data = 0.0
+
+ENDBLOCK
+
+
+#  Boundary conditions
+
+STARTBLOCK BC
+
+nBC = 4
+
+BFGTitle = Left
+BCType = FullState
+Data = 0.0
+
+BFGTitle = Right
+BCType = FullState
+Data = 0.0
+
+BFGTitle = Top
+BCType = FullState
+Data = 0.0
+
+BFGTitle = Bottom
+BCType = FullState
+Data = 1.0
+
+ENDBLOCK
+
+
+# Outputs
+
+STARTBLOCK OUTPUT
+
+nOutput = 0
+
+ENDBLOCK
+

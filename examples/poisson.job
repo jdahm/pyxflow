@@ -1,0 +1,19 @@
+# Case
+Restart = False
+InputFile = uniform_tri_q1_2.gri
+SavePrefix = poisson
+EqnSetFile = poisson.eqn
+InterpBasis = TriLagrange
+InterpOrder = 2
+SpaceScheme = HDG
+
+# Solver
+NonlinearSolver = Newton
+LinearSolver = GMRES
+Preconditioner = BlockJacobi
+nIterNonlinear = 10
+ResidualTolerance = 1e-8
+Verbosity = High
+
+# Temporal parameters
+TimeScheme = Steady
