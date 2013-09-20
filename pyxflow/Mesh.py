@@ -1,4 +1,4 @@
-# File to interface with XFlow mesh objects in various forms
+"""File to interface with XFlow mesh objects in various forms"""
 
 # Versions:
 #  2013-06-11 @dalle   : First version
@@ -35,9 +35,7 @@ class xf_Mesh:
 
 # --- Class just for meshes read from '.gri' files ---
 class xf_GriFile:
-    """
-    GRI file class for pyXFlow, a Python interface for XFlow
-    """
+    """GRI file class for pyXFlow, a Python interface for XFlow"""
     # Parameters
     nNode = 0
     Dim = 0
@@ -64,13 +62,12 @@ class xf_GriFile:
         This function reads a '.gri' file into a Python representation
         of an abbreviated XFlow mesh.  It only has the properties to describe
         a mesh compatible with '.gri' files.
+
+        >>> M = xf_GriFile.Read("../examples/uniform_tri_q1_2.gri")
         """
         
         # Versions:
         #  2013-09-20 @dalle   : First version
-        #
-        # Aliases:
-        #  @dalle   : Derek J. Dalle <dalle@umich.edu>
         
         # Initialize the object.
         Mesh = cls()
@@ -201,9 +198,6 @@ class xf_GriFile:
         """
         # Versions:
         #  2013-09-20 @dalle   : First version
-        #
-        # Aliases:
-        #  @dalle   : Derek J. Dalle <dalle@umich.edu>
         
         # Open the file for writing.
         f = open(fname, 'w')
