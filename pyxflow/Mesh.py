@@ -48,6 +48,7 @@ class xf_GriFile:
     ElemGroup = None
     nElemTot = 0
     
+    
     # Function to read in meshes from file.
     @classmethod
     def Read(cls, fname):
@@ -58,7 +59,7 @@ class xf_GriFile:
            fname : name of file to be read
         
         OUTPUTS:
-           Mesh  : xf_Mesh object
+           Mesh  : xf_GriFile object
         
         This function reads a '.gri' file into a Python representation
         of an abbreviated XFlow mesh.  It only has the properties to describe
@@ -159,6 +160,7 @@ class xf_GriFile:
                     # Tetrahedral elements
                     nn = (iOrder+1)*(iOrder+2)*(iOrder+3) / 6
             else:
+                f.close()
                 raise NameError('Unrecognized basis type.')
             # Initialize an element group
             EG.append(xf_EGroup(nElem, iOrder, D[2], nn))
@@ -176,8 +178,85 @@ class xf_GriFile:
         # Save the element groups.
         Mesh.ElemGroup = EG
         
+        # Close the file.
+        f.close()
         # Output the mesh.
         return Mesh
+    
+    
+    # === Method to write '.gri' files ===
+    def Write(self, fname):
+        """
+        Mesh.Write(fname)
+        
+        INPUTS:
+           Mesh  : xf_GriFile object
+           fname : name of file to write to
+        
+        OUTPUTS:
+           (None)
+        
+        This method writes a '.gri' file using the contents of an
+        xf_GriFile object.
+        """
+        # Versions:
+        #  2013-09-20 @dalle   : First version
+        #
+        # Aliases:
+        #  @dalle   : Derek J. Dalle <dalle@umich.edu>
+        
+        # Open the file for writing.
+        f = open(fname, 'w')
+        
+        # Write the first line.
+        # nNode nElemTot Dim
+        f.write("%i %i %i\n" % (self.nNode, self.nElemTot, self.Dim))
+        
+        # Loop through the nodes.
+        for i in np.arange(self.nNode):
+            # Loop through the dimensions
+            for j in range(self.Dim):
+                # Print the coordinates.
+                f.write("%.15e " % (self.Coord[i,j]))
+            # Print a newline character.
+            f.write("\n")
+        
+        # Write the number of boundary face groups.
+        f.write(str(self.nBFaceGroup) + "\n")
+        # Loop through the boundary face groups.
+        for i in range(self.nBFaceGroup):
+            # Extract the group.
+            BG = self.BFaceGroup[i]
+            # Write the header for the boundary face group.
+            f.write("%i %i %s\n" % (BG.nBFace, BG.nf, BG.Title))
+            # Loop through the face elements.
+            for j in np.arange(BG.nBFace):
+                # Loop through the nodes in the element.
+                # This is where my Python coding is clearly inadequate.
+                for k in range(BG.nf):
+                    f.write("%i " % (BG.NB[j,k]))
+                # Move to the next line.
+                f.write("\n")
+        
+        # Loop through the element groups.
+        for i in range(self.nElemGroup):
+            # Extract the group.
+            EG = self.ElemGroup[i]
+            # Write the header line for group i.
+            f.write("%i %i %s\n" % (EG.nElem, EG.Order, EG.Basis))
+            # Loop through the elements.
+            for j in np.arange(EG.nElem):
+                # Loop through the nodes. :(
+                for k in range(EG.nn):
+                    # Print the number
+                    f.write("%i " % (EG.NE[j,k]))
+                # Move to the next line.
+                f.write("\n")
+                
+        # Close the file.
+        f.close()
+        # End function
+        return None
  
  
 # --- Class for .gri file boundary face groups ---
@@ -190,7 +269,7 @@ class xf_BGroup:
         # Set the parameters
         self.Title  = Title
         self.nBFace = nBFace
-        self.nf     = 0
+        self.nf     = nf
         # Initialize the node numbers
         self.NB = np.zeros((nBFace, nf))
     # It would be nice to define a conversion method here...
