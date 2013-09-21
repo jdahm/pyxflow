@@ -2,9 +2,6 @@
 
 # Versions:
 #  2013-06-11 @dalle   : First version
-#
-# Aliases:
-#  @dalle   : Derek J. Dalle <dalle@umich.edu>
 
 
 # ------- Modules required -------
