@@ -1,2 +1,9 @@
 *.py[cod]
 *~
+*.swp
+
+build/
+
+*.so
+*.o
+
