@@ -34,16 +34,41 @@ px_ReadGriFile(PyObject *self, PyObject *args)
 	ierr = xf_Error(xf_ReadGriFile(InputFile, NULL, Mesh));
 	if (ierr != xf_OK) return NULL;
 	
-	// Extract number of nodes.
-	nNode = Mesh->nNode;
+	printf("%p\n%d\n", Mesh, Mesh);
 	
 	// Return the number of elements
+	return Py_BuildValue("i", Mesh);
+}
+
+static PyObject *
+px_nNode(PyObject *self, PyObject *args)
+{
+	xf_Mesh *Mesh = NULL;
+	int pMesh = 0;
+	int ierr;
+	int nNode;
+	
+	// Parse the input into a pointer.
+	if (!PyArg_ParseTuple(args, "i", &pMesh))
+		return NULL;
+	
+	printf("%d\n", pMesh);
+	
+	// Get the Mesh from the pointer.
+	Mesh = pMesh;
+	
+	// Get the number of nodes.
+	nNode = Mesh->nNode;
+	
 	return Py_BuildValue("i", nNode);
 }
 
+
+// Definitions for px_Mesh methods
 static PyMethodDef MeshMethods[] = {
 	{"Add",  px_Mesh_Add,    METH_VARARGS, "Add two numbers... but in C"},
 	{"Read", px_ReadGriFile, METH_VARARGS, "Number of nodes from GRI"},
+	{"nNode", px_nNode,      METH_VARARGS, "Get number of nodes"},
 	{NULL, NULL, 0, NULL}
 };
 
