@@ -8,7 +8,7 @@ static PyMethodDef Methods[] = {
 };
 
 PyMODINIT_FUNC
-initpx(void)
+initpythonxflow(void)
 {
-	(void) Py_InitModule("px", Methods);
+	(void) Py_InitModule("pythonxflow", Methods);
 }

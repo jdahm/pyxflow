@@ -14,6 +14,7 @@ pythonxflow = Extension("pythonxflow",
     include_dirs = [xflow_home+"/include"],
     libraries = libs,
     library_dirs = [xflow_home+"/lib"],
+    runtime_library_dirs = [xflow_home+"/lib"],
     sources = ["pxmodule.c", "px_Mesh.c"])
 
 setup(
