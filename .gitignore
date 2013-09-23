@@ -8,3 +8,6 @@ build/
 *.o
 
 __pycache__/
+_test*
+
+config.cfg

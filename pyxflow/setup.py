@@ -10,7 +10,7 @@ eqnset = config.get("xflow", "eqnset")
 extra_libs = [str(x) for x in json.loads(config.get("xflow", "libs"))]
 libs = ["xfSerial", eqnset] + extra_libs
 
-pythonxflow = Extension("pythonxflow",
+pythonxflow = Extension("_pyxflow",
     include_dirs = [xflow_home+"/include"],
     libraries = libs,
     library_dirs = [xflow_home+"/lib"],

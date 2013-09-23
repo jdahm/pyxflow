@@ -14,8 +14,8 @@ sp.call([pythonexec, "setup.py", "build"])
 
 print "Moving the module into place..."
 libdir = "build/lib."+config.get("python", "arch")+"-"+config.get("python", "version")
-lib = libdir+"/pythonxflow.so"
-shutil.move(lib, "./pythonxflow.so")
+lib = libdir+"/_pyxflow.so"
+shutil.move(lib, "./_pyxflow.so")
 
 print "Removing the build directory..."
 shutil.rmtree("build")

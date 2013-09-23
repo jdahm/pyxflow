@@ -2,13 +2,14 @@
 #include "px_Mesh.h"
 
 static PyMethodDef Methods[] = {
-	{"CreateMesh", px_CreateMesh, METH_VARARGS, "Create and read xf_Mesh from GRI file"},
+	{"CreateMesh",  px_CreateMesh,  METH_VARARGS, "Create empty xf_Mesh"},
+	{"ReadGriFile", px_ReadGriFile, METH_VARARGS, "Read GRI file to xf_Mesh"},
 	{"DestroyMesh", px_DestroyMesh, METH_VARARGS, "Destroy mesh and free memory"},
 	{NULL, NULL, 0, NULL}
 };
 
 PyMODINIT_FUNC
-initpythonxflow(void)
+init_pyxflow(void)
 {
-	(void) Py_InitModule("pythonxflow", Methods);
+	(void) Py_InitModule("_pyxflow", Methods);
 }

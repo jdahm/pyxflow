@@ -7,6 +7,8 @@
 # ------- Modules required -------
 # Used for more efficient data storage
 import numpy as np
+# The background pyxflow workhorse module
+import _pyxflow as px
 
 # ------- CLASSES -------
 # --- Class to represent the (full) mesh ---
@@ -14,6 +16,7 @@ class xf_Mesh:
     """A Python class for XFlow mesh objects"""
     
     # Parameters
+    pointer = None
     Dim = 0
     nNode = 0
     Coord = None
@@ -28,6 +31,69 @@ class xf_Mesh:
     ParallelInfo = None
     BackgroundMesh = None
     Motion = None
+    
+    # Method to initialize the object
+    def __init__(self, gri=None, ptr=None):
+        """
+        Mesh = xf_Mesh(gri=None, ptr=None)
+        
+        INPUTS:
+           gri  : file name for a '.gri' file to read the mesh from
+           ptr  : integer pointer to existing C xf_Mesh struct
+        
+        OUTPUTS:
+           Mesh : an instance of the xf_Mesh Python class
+        
+        This function initializes a Mesh object in one of three ways.  If
+        the `gri` key is not `None`, the function will attempt to read a
+        mesh from a text file.  If the `ptr` is not `None`, the function
+        assumes the mesh already exists on the heap and will read from it.
+        If both keys are `None`, an empty mesh will be created.  Finally,
+        if both keys are not `None`, an exception is raised.
+        """
+        
+        # Versions:
+        #  2013-09-23 @dalle   : First version
+        
+        # Check the parameters.
+        if gri != None:
+            if ptr != None:
+                raise NameError
+            # Read the file and get the pointer.
+            ptr = px.ReadGriFile(gri)
+            # Set it.
+            self.pointer = ptr
+        elif ptr != None:
+            # Simply set the pointer.
+            self.pointer = ptr
+        else:
+            # Create an empty mesh.
+            ptr = px.CreateMesh()
+            # Set the pointer.
+            self.pointer = ptr
+            # Exit the function with default properties.
+            return None
+            
+            
+            
+            
+    def __del__(self):
+        """
+        xf_Mesh destructor
+        
+        This function reminds the pyxflow module to clean up the C
+        xf_Mesh object when the python object is deleted.
+        """
+        
+        # Version:
+        #  2013-09-23 @dalle   : First version
+        
+        print "Being deleted, ptr = %i" % self.pointer
+        
+        if self.pointer != None:
+            print "Not none!"
+            px.DestroyMesh(self.pointer)
+            
 
 
 # --- Class just for meshes read from '.gri' files ---

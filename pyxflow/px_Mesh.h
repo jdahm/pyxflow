@@ -7,7 +7,23 @@ PyObject *
 px_CreateMesh(PyObject *self, PyObject *args);
 /*
 PURPOSE:
-  Reads a GRI file and returns a pointer to xf_Mesh stuct
+  Creates an empty xf_Mesh object and returns pointer
+
+CALL:
+  M = px.CreateMesh()
+
+INPUTS:
+  None
+
+OUTPUTS:
+  M : pointer to xf_Mesh
+*/
+
+PyObject *
+px_ReadGriFile(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Reads a GRI file and returns a pointer to xf_Mesh struct
 
 CALL:
   M = px.CreateMesh(fname)
