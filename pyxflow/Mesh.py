@@ -56,26 +56,25 @@ class xf_Mesh:
         #  2013-09-23 @dalle   : First version
         
         # Check the parameters.
-        if gri != None:
-            if ptr != None:
+        if gri is not None:
+            if ptr is not None:
                 raise NameError
             # Read the file and get the pointer.
             ptr = px.ReadGriFile(gri)
             # Set it.
             self.pointer = ptr
-        elif ptr != None:
+	    self.owner = True
+        elif ptr is not None:
             # Simply set the pointer.
             self.pointer = ptr
+	    self.owner = False
         else:
             # Create an empty mesh.
             ptr = px.CreateMesh()
             # Set the pointer.
             self.pointer = ptr
-            # Exit the function with default properties.
-            return None
-            
-            
-            
+            self.owner = True
+
     # Destructor method for xf_Mesh
     def __del__(self):
         """
@@ -88,10 +87,10 @@ class xf_Mesh:
         # Version:
         #  2013-09-23 @dalle   : First version
         
-        
-        if self.pointer != None:
+        # Always have a mesh to destroy
+        if self.owner:
             px.DestroyMesh(self.pointer)
-            
+
 
 
 # --- Class just for meshes read from '.gri' files ---
