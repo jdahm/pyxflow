@@ -89,7 +89,6 @@ class xf_Mesh:
         self.ElemGroup = []
         # Get the data.
         for i in range(self.nElemGroup):
-            print "i=", i, "ptr=", self._ElemGroup
             self.ElemGroup.append(xf_ElemGroup(ptr=self._ElemGroup, i=i))
         
 
