@@ -71,8 +71,23 @@ class xf_Mesh:
         
         # Get the basic coordinate information.
         self.Dim, self.nNode, self.Coord = px.GetNodes(self._ptr)
+        
         # Basic boundary condition info
         self.nBFaceGroup, self._BFaceGroup = px.nBFaceGroup(self._ptr)
+        # Initialize the BFaceGroup
+        self.BFaceGroup = []
+        # Get the data.
+        for i in range(self.nBFaceGroup):
+            self.BFaceGroup.append(xf_BFaceGroup(ptr=self._BFaceGroup, i=i))
+        
+        # Basic element group info
+        self.nElemGroup, self._ElemGroup = px.nElemGroup(self._ptr)
+        # Initialize the ElemGroup
+        self.ElemGroup = []
+        # Get the data.
+        for i in range(self.nElemGroup):
+            print "i=", i, "ptr=", self._ElemGroup
+            self.ElemGroup.append(xf_ElemGroup(ptr=self._ElemGroup, i=i))
         
         
             
@@ -95,7 +110,71 @@ class xf_Mesh:
             px.DestroyMesh(self._ptr)
             
 
+# --- Class for boundary face groups ---
+class xf_BFaceGroup:
+    """
+    Boundary face group object for pyxflow, a Python interface for XFlow
+    
+    """
+    # Initialization method
+    def __init__(self, Title=None, nBFace=None, ptr=None, i=None):
+        # Define the properties
+        self.Title  = Title
+        self.nBFace = nBFace
+        self.BFace  = None
+        self._BFace = None
+        # Check for a pointer.
+        if ptr is not None:
+            # index
+            if i is None:
+                i = 0
+            # Fields
+            self.Title, self.nBFace, self._BFace = px.BFaceGroup(ptr, i)
+            
 
+# --- Class for boundary face groups ---
+class xf_ElemGroup:
+    """
+    Element group object for pyxflow, a Python interface for XFlow
+    
+    """
+    # Initialization method
+    def __init__(self, ptr=None, i=None):
+        # Define the properties
+        self.nElem  = 0
+        self.nNode  = 0
+        self.QOrder = 0
+        self.QBasis = None
+        self.Node   = None
+        # Check for a pointer.
+        if ptr is not None:
+            # index
+            if i is None:
+                i = 0
+            # Fields
+            (self.nElem, self.nNode, self.QOrder, self.QBasis,
+                self.Node) = px.ElemGroup(ptr, i)
+            
+            
+            
+
+# --- Class for boundary faces ---
+class xf_BFace:
+    """
+    Boundary face class for pyxflow, a Python interface for XFlow
+    
+    """
+    # Initialization method
+    def __init__(self, ElemGroup=0, Elem=0, Face=0, Orient=0):
+        # Define the properties.
+        self.ElemGroup = ElemGroup
+        self.Elem      = Elem
+        self.Face      = Face
+        self.Orient    = Orient
+    # No methods for now
+    
+    
+# -------------- Manual commands that don't use _pyxflow ---------------------
 # --- Class just for meshes read from '.gri' files ---
 class xf_GriFile:
     """GRI file class for pyXFlow, a Python interface for XFlow"""
@@ -352,35 +431,5 @@ class xf_EGroup:
 
 
 
-# --- Class for boundary face groups ---
-class xf_BFaceGroup:
-    """
-    Boundary face group object for pyxflow, a Python interface for XFlow
-    
-    """
-    # Initialization method
-    def __init__(self, Title='', nBFace=0, BFace=[]):
-        # Define the properties
-        self.Title  = Title
-        self.nBFace = nBFace
-        self.BFace  = BFace
-    # No methods for now
-    # It would be nice to define a conversion method here...
-    #    xf_BGroup --> xf_BFaceGroup
 
-
-# --- Class for boundary faces ---
-class xf_BFace:
-    """
-    Boundary face class for pyxflow, a Python interface for XFlow
-    
-    """
-    # Initialization method
-    def __init__(self, ElemGroup=0, Elem=0, Face=0, Orient=0):
-        # Define the properties.
-        self.ElemGroup = ElemGroup
-        self.Elem      = Elem
-        self.Face      = Face
-        self.Orient    = Orient
-    # No methods for now
     

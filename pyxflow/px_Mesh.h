@@ -93,6 +93,68 @@ OUTPUTS:
 
 
 PyObject *
+px_BFaceGroup(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get basic information from a boundary face group
+  
+CALL:
+  (Title, nBFace, BF) = px.BFaceGroup(BFG, iBFG)
+  
+INPUTS:
+  BFG  : pointer to Mesh->BFaceGroup
+  iBFG : index of boundary face group
+  
+OUTPUTS:
+  Title  : title of BFace group, Mesh->BFaceGroup[i]->Title
+  nBFace : number of BFaces in BFaceGroup[i]
+  BF     : pointer to Mesh->BFaceGroup[i]->BFace
+*/
+
+
+PyObject *
+px_nElemGroup(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get number of element groups and corresponding pointer
+  
+CALL:
+  (nElemGroup, EG) = px.nElemGroup(M)
+
+INPUTS:
+  M : xf_Mesh pointer
+
+OUTPUTS:
+  nElemGroup : number of xf_ElemGroup structs in xf_Mesh
+  EG         : pointer to Mesh->ElemGroup
+*/
+
+
+PyObject *
+px_ElemGroup(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get basic information from an element group
+  
+CALL:
+  (nElem, nNode, QOrder, QBasis, Node) = px.ElemGroup(EG, i)
+  
+INPUTS:
+  EG : pointer to Mesh->ElemGroup
+  i  : index of element group
+  
+OUTPUTS:
+  nElem  : number of elements in group, Mesh->ElemGroup[i].nElem
+  nNode  : number of nodes in group, Mesh->ElemGroup[i].nNode
+  QOrder : order of elements in group
+  QBasis : string describing basis functions
+  Node   : int NumPy array of node numbers in each element
+*/
+
+
+
+
+PyObject *
 px_DestroyMesh(PyObject *self, PyObject *args);
 /*
 PURPOSE:

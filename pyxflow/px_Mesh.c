@@ -121,13 +121,67 @@ PyObject *
 px_BFaceGroup(PyObject *self, PyObject *args)
 {
 	xf_BFaceGroup *BFG = NULL;
+	int iBFG, nBFace;
+	const char * Title;
 	
 	// Get the pointer to the xf_BFaceGroup
-	if (!PyArg_ParseTuple(args, "n", &BFG))
+	if (!PyArg_ParseTuple(args, "ni", &BFG, &iBFG))
 		return NULL;
 	
+	// Read the title
+	Title = BFG[iBFG].Title;
+	nBFace = BFG[iBFG].nBFace;
+	
 	// Output: (Title, nBFace, _BFace[0])
-	return Py_BuildValue("sin", BFG->Title, BFG->nBFace, BFG->BFace);
+	return Py_BuildValue("sin", Title, nBFace, BFG[iBFG].BFace);
+}
+
+
+// Function to extract element group information
+PyObject *
+px_nElemGroup(PyObject *self, PyObject *args)
+{
+	xf_Mesh *Mesh = NULL;
+	
+	// Get the pointer to the xf_Mesh.
+	if (!PyArg_ParseTuple(args, "n", &Mesh))
+		return NULL;
+	
+	// Output
+	return Py_BuildValue("in", Mesh->nElemGroup, Mesh->ElemGroup);
+}
+
+
+// Function to read the BFaceGroup
+PyObject *
+px_ElemGroup(PyObject *self, PyObject *args)
+{
+	xf_ElemGroup *EG = NULL;
+	int i, nElem, nNode, QOrder;
+	const char *QBasis;
+	PyObject *Node;
+	npy_intp dims[2];
+	
+	// Get the pointer to the xf_BFaceGroup
+	if (!PyArg_ParseTuple(args, "ni", &EG, &i))
+		return NULL;
+	
+	// Read the data
+	nElem  = EG[i].nElem;
+	nNode  = EG[i].nNode;
+	QOrder = EG[i].QOrder;
+	// Convert the enumeration to a string.
+	QBasis = xfe_BasisName[EG[i].QBasis];
+	
+	// Dimensions of the nodes array
+	dims[0] = nElem;
+	dims[1] = nNode;
+	// Read the nodes to a numpy array.
+	Node = PyArray_SimpleNewFromData( \
+		2, dims, NPY_INT, *EG[i].Node);
+	
+	// Output: (nElem, nNode, QOrder, QBasis, Node)
+	return Py_BuildValue("iiisO", nElem, nNode, QOrder, QBasis, Node);
 }
 
 
