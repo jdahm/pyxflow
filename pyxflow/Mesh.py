@@ -76,7 +76,7 @@ class xf_Mesh:
             
             
             
-            
+    # Destructor method for xf_Mesh
     def __del__(self):
         """
         xf_Mesh destructor
@@ -88,10 +88,8 @@ class xf_Mesh:
         # Version:
         #  2013-09-23 @dalle   : First version
         
-        print "Being deleted, ptr = %i" % self.pointer
         
         if self.pointer != None:
-            print "Not none!"
             px.DestroyMesh(self.pointer)
             
 

@@ -1,8 +1,10 @@
 #include <Python.h>
+#include <numpy/arrayobject.h>
 #include <xf_AllStruct.h>
 #include <xf_All.h>
 #include <xf_Mesh.h>
 #include <xf_String.h>
+
 
 
 // Function to create an empty mesh.
@@ -30,7 +32,7 @@ px_ReadGriFile(PyObject *self, PyObject *args)
 	int ierr;
 	
 	// Parse the python inputs.
-	if (!PyArg_ParseTuple(args, "ns", &Mesh, &InputFile))
+	if (!PyArg_ParseTuple(args, "s", &InputFile))
 		return NULL;
 	
 	// Allocate the mesh.
@@ -45,6 +47,58 @@ px_ReadGriFile(PyObject *self, PyObject *args)
 	return Py_BuildValue("n", Mesh);
 }
 
+
+// Function to write xf_Mesh to .gri file
+PyObject *
+px_WriteGriFile(PyObject *self, PyObject *args)
+{
+	xf_Mesh *Mesh = NULL;
+	char *OutputFile;
+	int ierr;
+	
+	// Parse the python inputs.
+	if (!PyArg_ParseTuple(args, "ns", &Mesh, &OutputFile))
+		return NULL;
+	
+	// Write the mesh to a .gri file.
+	ierr = xf_Error(xf_WriteGriFile(Mesh, OutputFile));
+	if (ierr != xf_OK) PyErr_SetString(PyExc_RuntimeError, "");
+	
+	// Nothing to return.
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+// Function to extract the node information
+PyObject *
+px_GetNodes(PyObject *self, PyObject *args)
+{
+	xf_Mesh *Mesh = NULL;
+	PyObject *np_Coord;
+	npy_intp coord_dims[2];
+	
+	// This must be called before using the NumPy API.
+	// Good luck trying to figure that out from the documentation.
+	import_array();
+	
+	// Get the pointer to the xf_Mesh.
+	PyArg_ParseTuple(args, "n", &Mesh);
+	
+	// Check the mesh?
+	printf("nNode = %i\n", Mesh->nNode);
+	
+	// Get dimensions
+	coord_dims[0] = Mesh->nNode;
+	coord_dims[1] = Mesh->Dim;
+	
+	// Make the mesh.
+	np_Coord = PyArray_SimpleNewFromData( \
+		2, coord_dims, NPY_DOUBLE, *Mesh->Coord);
+	
+	// Output (Dim, nNode, Coord).
+	return Py_BuildValue("iiO", Mesh->Dim, Mesh->nNode, np_Coord);
+}
 
 // Function to destroy the mesh
 PyObject *

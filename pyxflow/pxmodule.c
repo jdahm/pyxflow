@@ -3,8 +3,10 @@
 
 static PyMethodDef Methods[] = {
 	{"CreateMesh",  px_CreateMesh,  METH_VARARGS, "Create empty xf_Mesh"},
-	{"ReadGriFile", px_ReadGriFile, METH_VARARGS, "Read GRI file to xf_Mesh"},
 	{"DestroyMesh", px_DestroyMesh, METH_VARARGS, "Destroy mesh and free memory"},
+	{"GetNodes",    px_GetNodes,    METH_VARARGS, "Get node coordinate info"},
+	{"ReadGriFile", px_ReadGriFile, METH_VARARGS, "Read GRI file to xf_Mesh"},
+	{"WriteGriFile",px_WriteGriFile,METH_VARARGS, "Write xf_Mesh to GRI file"},
 	{NULL, NULL, 0, NULL}
 };
 

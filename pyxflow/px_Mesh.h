@@ -19,6 +19,7 @@ OUTPUTS:
   M : pointer to xf_Mesh
 */
 
+
 PyObject *
 px_ReadGriFile(PyObject *self, PyObject *args);
 /*
@@ -34,6 +35,44 @@ INPUTS:
 OUTPUTS:
   M : pointer to xf_Mesh
 */
+
+
+PyObject *
+px_WriteGriFile(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Write an xf_Mesh object to a GRI file
+
+CALL:
+  px.WriteGriFile(M, fname)
+
+INPUTS:
+  M     : xf_Mesh pointer (python int)
+  fname : file name for output
+  
+OUTPUTS:
+  None
+*/
+
+
+PyObject *
+px_GetNodes(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get basic nodes information from xf_Mesh object
+  
+CALL:
+  (Dim, nNode, Coord) = px.GetNodes(M)
+
+INPUTS:
+  M : xf_Mesh pointer
+  
+OUTPUTS:
+  Dim   : number of dimensions [ 2 | 3 ]
+  nNode : number of nodes
+  Coord : numpy.ndarray of coordinates  [(nNode)x(Dim) ndarray]
+*/
+
 
 PyObject *
 px_DestroyMesh(PyObject *self, PyObject *args);
