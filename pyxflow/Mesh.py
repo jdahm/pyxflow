@@ -51,21 +51,24 @@ class xf_Mesh:
         #  2013-09-23 @dalle   : First version
         
         # Check the parameters.
-        if gri != None:
-            if ptr != None:
+        if gri is not None:
+            if ptr is not None:
                 raise NameError
             # Read the file and get the pointer.
             ptr = px.ReadGriFile(gri)
             # Set it.
             self._ptr = ptr
-        elif ptr != None:
+            self.owner = True
+        elif ptr is not None:
             # Simply set the pointer.
             self._ptr = ptr
+            self.owner = False
         else:
             # Create an empty mesh.
             ptr = px.CreateMesh()
             # Set the pointer.
             self._ptr = ptr
+            self.owner = True
             # Exit the function with default properties.
             return None
         
@@ -89,10 +92,8 @@ class xf_Mesh:
             print "i=", i, "ptr=", self._ElemGroup
             self.ElemGroup.append(xf_ElemGroup(ptr=self._ElemGroup, i=i))
         
-        
-            
-            
-            
+
+
     # Destructor method for xf_Mesh
     def __del__(self):
         """
@@ -101,10 +102,8 @@ class xf_Mesh:
         This function reminds the pyxflow module to clean up the C
         xf_Mesh object when the python object is deleted.
         """
-        
         # Version:
         #  2013-09-23 @dalle   : First version
-        
         
         if self._ptr != None:
             px.DestroyMesh(self._ptr)
@@ -116,6 +115,9 @@ class xf_BFaceGroup:
     Boundary face group object for pyxflow, a Python interface for XFlow
     
     """
+    # Versions:
+    #   2013-09-24 @dalle   : _pyxflow version
+    
     # Initialization method
     def __init__(self, Title=None, nBFace=None, ptr=None, i=None):
         # Define the properties
@@ -138,6 +140,9 @@ class xf_ElemGroup:
     Element group object for pyxflow, a Python interface for XFlow
     
     """
+    # Versions:
+    #   2013-09-24 @dalle   : _pyxflow version
+    
     # Initialization method
     def __init__(self, ptr=None, i=None):
         # Define the properties
