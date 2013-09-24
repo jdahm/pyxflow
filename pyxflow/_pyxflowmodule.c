@@ -1,6 +1,11 @@
 #include <Python.h>
 #include "px_Mesh.h"
 
+// Steps to import the NumPy API
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define PY_ARRAY_UNIQUE_SYMBOL _pyxflow_ARRAY_API
+#include <numpy/arrayobject.h>
+
 static PyMethodDef Methods[] = {
 	{"CreateMesh",  px_CreateMesh,  METH_VARARGS, "Create empty xf_Mesh"},
 	{"DestroyMesh", px_DestroyMesh, METH_VARARGS, "Destroy mesh and free memory"},
@@ -14,5 +19,8 @@ static PyMethodDef Methods[] = {
 PyMODINIT_FUNC
 init_pyxflow(void)
 {
+	// This must be called before using the NumPy API.
+	import_array();
+	// Initialization command.
 	(void) Py_InitModule("_pyxflow", Methods);
 }

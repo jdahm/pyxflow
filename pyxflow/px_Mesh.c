@@ -1,5 +1,7 @@
 #include <Python.h>
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define PY_ARRAY_UNIQUE_SYMBOL _pyxflow_ARRAY_API
+#define NO_IMPORT_ARRAY
 #include <numpy/arrayobject.h>
 #include <xf_AllStruct.h>
 #include <xf_All.h>
@@ -79,12 +81,9 @@ px_GetNodes(PyObject *self, PyObject *args)
 	PyObject *np_Coord;
 	npy_intp dims[2];
 	
-	// This must be called before using the NumPy API.
-	// Good luck trying to figure that out from the documentation.
-	import_array();
-	
 	// Get the pointer to the xf_Mesh.
-	PyArg_ParseTuple(args, "n", &Mesh);
+	if (!PyArg_ParseTuple(args, "n", &Mesh))
+		return NULL;
 	
 	// Get dimensions
 	dims[0] = Mesh->nNode;
@@ -107,13 +106,28 @@ PyObject *
 px_nBFaceGroup(PyObject *self, PyObject *args)
 {
 	xf_Mesh *Mesh = NULL;
-	int ierr;
 	
 	// Get the pointer to the xf_Mesh.
-	PyArg_ParseTuple(args, "n", &Mesh);
+	if (!PyArg_ParseTuple(args, "n", &Mesh))
+		return NULL;
 	
 	// Output
 	return Py_BuildValue("in", Mesh->nBFaceGroup, Mesh->BFaceGroup);
+}
+
+
+// Function to read the BFaceGroup
+PyObject *
+px_BFaceGroup(PyObject *self, PyObject *args)
+{
+	xf_BFaceGroup *BFG = NULL;
+	
+	// Get the pointer to the xf_BFaceGroup
+	if (!PyArg_ParseTuple(args, "n", &BFG))
+		return NULL;
+	
+	// Output: (Title, nBFace, _BFace[0])
+	return Py_BuildValue("sin", BFG->Title, BFG->nBFace, BFG->BFace);
 }
 
 
