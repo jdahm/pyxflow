@@ -1,36 +1,19 @@
 """File to interface with XFlow mesh objects in various forms"""
 
 # Versions:
-#  2013-06-11 @dalle   : First version
+#  2013-09-22 @dalle   : First version
 
 
 # ------- Modules required -------
 # Used for more efficient data storage
 import numpy as np
 # The background pyxflow workhorse module
-import _pyxflow as px
+import pyxflow._pyxflow as px
 
 # ------- CLASSES -------
 # --- Class to represent the (full) mesh ---
 class xf_Mesh:
     """A Python class for XFlow mesh objects"""
-    
-    # Parameters
-    pointer = None
-    Dim = 0
-    nNode = 0
-    Coord = None
-    nIFace = 0
-    IFace = None
-    nBFaceGroup = 0
-    BFaceGroup = None
-    nElemGroup = 0
-    ElemGroup = None
-    nPeriodicGroup = 0
-    PeriodicGroup = None
-    ParallelInfo = None
-    BackgroundMesh = None
-    Motion = None
     
     # Method to initialize the object
     def __init__(self, gri=None, ptr=None):
@@ -62,17 +45,22 @@ class xf_Mesh:
             # Read the file and get the pointer.
             ptr = px.ReadGriFile(gri)
             # Set it.
-            self.pointer = ptr
+            self._ptr = ptr
         elif ptr != None:
             # Simply set the pointer.
-            self.pointer = ptr
+            self._ptr = ptr
         else:
             # Create an empty mesh.
             ptr = px.CreateMesh()
             # Set the pointer.
-            self.pointer = ptr
+            self._ptr = ptr
             # Exit the function with default properties.
             return None
+        
+        # Get the basic coordinate information.
+        self.Dim, self.nNode, self.Coord = px.GetNodes(self._ptr)
+        
+        
             
             
             
