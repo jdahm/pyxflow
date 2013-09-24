@@ -15,6 +15,18 @@ import pyxflow._pyxflow as px
 class xf_Mesh:
     """A Python class for XFlow mesh objects"""
     
+    # Parameters
+    _ptr = None
+    Dim = 0
+    nNode = 0
+    Coord = None
+    nIFace = 0
+    IFace = None
+    nBFaceGroup = 0
+    BFaceGroup = None
+    nElemGroup = 0
+    ElemGroup = None
+    
     # Method to initialize the object
     def __init__(self, gri=None, ptr=None):
         """
@@ -59,6 +71,8 @@ class xf_Mesh:
         
         # Get the basic coordinate information.
         self.Dim, self.nNode, self.Coord = px.GetNodes(self._ptr)
+        # Basic boundary condition info
+        self.nBFaceGroup, self._BFaceGroup = px.nBFaceGroup(self._ptr)
         
         
             
@@ -77,8 +91,8 @@ class xf_Mesh:
         #  2013-09-23 @dalle   : First version
         
         
-        if self.pointer != None:
-            px.DestroyMesh(self.pointer)
+        if self._ptr != None:
+            px.DestroyMesh(self._ptr)
             
 
 

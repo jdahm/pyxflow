@@ -90,6 +90,9 @@ px_GetNodes(PyObject *self, PyObject *args)
 	dims[0] = Mesh->nNode;
 	dims[1] = Mesh->Dim;
 	
+	// Error checking
+	if (Mesh->nNode <= 0) return NULL;
+	
 	// Make the mesh.
 	np_Coord = PyArray_SimpleNewFromData( \
 		2, dims, NPY_DOUBLE, *Mesh->Coord);
@@ -101,7 +104,7 @@ px_GetNodes(PyObject *self, PyObject *args)
 
 // Function to extract the boundary conditions
 PyObject *
-px_GetNumBGroup(PyObject *self, PyObject *args)
+px_nBFaceGroup(PyObject *self, PyObject *args)
 {
 	xf_Mesh *Mesh = NULL;
 	int ierr;

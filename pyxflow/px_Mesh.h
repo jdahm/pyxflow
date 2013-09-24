@@ -75,6 +75,24 @@ OUTPUTS:
 
 
 PyObject *
+px_nBFaceGroup(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get number of boundary conditions and corresponding pointer
+  
+CALL:
+  (nBFaceGroup, BFG) = px.nBFaceGroup(M)
+
+INPUTS:
+  M : xf_Mesh pointer
+
+OUTPUTS:
+  nBFaceGroup : number of BFaceGroup structs in xf_Mesh
+  BFG         : pointer to Mesh->BFaceGroup
+*/
+
+
+PyObject *
 px_DestroyMesh(PyObject *self, PyObject *args);
 /*
 PURPOSE:
