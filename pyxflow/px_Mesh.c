@@ -40,11 +40,11 @@ px_ReadGriFile(PyObject *self, PyObject *args)
 	
 	// Allocate the mesh.
 	ierr = xf_Error(xf_CreateMesh(&Mesh));
-	if (ierr != xf_OK) PyErr_SetString(PyExc_RuntimeError, "");
+	if (ierr != xf_OK) return NULL;
 	
 	// Read the .gri file into the xf_Mesh structure.
 	ierr = xf_Error(xf_ReadGriFile(InputFile, NULL, Mesh));
-	if (ierr != xf_OK) PyErr_SetString(PyExc_RuntimeError, "");
+	if (ierr != xf_OK) return NULL;
 	
 	// Return the pointer.
 	return Py_BuildValue("n", Mesh);
@@ -65,7 +65,7 @@ px_WriteGriFile(PyObject *self, PyObject *args)
 	
 	// Write the mesh to a .gri file.
 	ierr = xf_Error(xf_WriteGriFile(Mesh, OutputFile));
-	if (ierr != xf_OK) PyErr_SetString(PyExc_RuntimeError, "");
+	if (ierr != xf_OK) return NULL;
 	
 	// Nothing to return.
 	Py_INCREF(Py_None);
@@ -193,7 +193,7 @@ px_DestroyMesh(PyObject *self, PyObject *args)
 	xf_Mesh *Mesh;
 	
 	// Get the pointer.
-	PyArg_ParseTuple(args, "n", &Mesh);
+	if (!PyArg_ParseTuple(args, "n", &Mesh)) return NULL;
   
 	// Deallocate the mesh.
 	ierr = xf_Error(xf_DestroyMesh(Mesh));
@@ -203,3 +203,4 @@ px_DestroyMesh(PyObject *self, PyObject *args)
 	Py_INCREF(Py_None);
 	return Py_None;
 }
+

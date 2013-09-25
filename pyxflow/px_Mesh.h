@@ -1,8 +1,6 @@
 #ifndef _PX_MESH_H
 #define _PX_MESH_H
 
-#include <Python.h>
-
 PyObject *
 px_CreateMesh(PyObject *self, PyObject *args);
 /*

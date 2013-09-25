@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "px_Mesh.h"
+#include "px_Geom.h"
 #include "px_All.h"
 
 // Steps to import the NumPy API
@@ -8,6 +9,7 @@
 #include <numpy/arrayobject.h>
 
 static PyMethodDef Methods[] = {
+	// xf_Mesh methods
 	{"CreateMesh", px_CreateMesh, METH_VARARGS,
 		"Create empty xf_Mesh"},
 	{"DestroyMesh", px_DestroyMesh, METH_VARARGS,
@@ -26,6 +28,14 @@ static PyMethodDef Methods[] = {
 		"Read GRI file to xf_Mesh"},
 	{"WriteGriFile", px_WriteGriFile, METH_VARARGS,
 		"Write xf_Mesh to GRI file"},
+	// xf_Geom methods
+	{"CreateGeom", px_CreateGeom, METH_VARARGS,
+		"Create empty xf_Geom"},
+	{"DestroyGeom", px_DestroyGeom, METH_VARARGS,
+		"Destroy geom and free memory"},
+	{"ReadGeomFile", px_ReadGeomFile, METH_VARARGS,
+		"Read '.geom' file to xf_Geom"},
+	// xf_All methods
 	{"CreateAll", px_CreateAll, METH_VARARGS,
 		"Create empty xf_All"},
 	{"DestroyAll", px_DestroyAll, METH_VARARGS,

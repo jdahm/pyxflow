@@ -15,7 +15,7 @@ _pyxflow = Extension("_pyxflow",
     libraries = libs,
     library_dirs = [xflow_home+"/lib"],
     runtime_library_dirs = [xflow_home+"/lib"],
-    sources = ["_pyxflowmodule.c", "px_Mesh.c", "px_All.c"])
+    sources = ["_pyxflowmodule.c", "px_Geom.c", "px_Mesh.c", "px_All.c"])
 
 setup(
     name = "python-xflow",

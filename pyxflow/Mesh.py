@@ -28,16 +28,16 @@ class xf_Mesh:
     ElemGroup = None
     
     # Method to initialize the object
-    def __init__(self, gri=None, ptr=None):
+    def __init__(self, fname=None, ptr=None):
         """
-        Mesh = xf_Mesh(gri=None, ptr=None)
+        Mesh = xf_Mesh(fname=None, ptr=None)
         
         INPUTS:
-           gri  : file name for a '.gri' file to read the mesh from
-           ptr  : integer pointer to existing C xf_Mesh struct
+           fname : file name for a '.gri' file to read the mesh from
+           ptr   : integer pointer to existing C xf_Mesh struct
         
         OUTPUTS:
-           Mesh : an instance of the xf_Mesh Python class
+           Mesh  : an instance of the xf_Mesh Python class
         
         This function initializes a Mesh object in one of three ways.  If
         the `gri` key is not `None`, the function will attempt to read a
@@ -46,16 +46,15 @@ class xf_Mesh:
         If both keys are `None`, an empty mesh will be created.  Finally,
         if both keys are not `None`, an exception is raised.
         """
-        
         # Versions:
         #  2013-09-23 @dalle   : First version
         
         # Check the parameters.
-        if gri is not None:
+        if fname is not None:
             if ptr is not None:
                 raise NameError
             # Read the file and get the pointer.
-            ptr = px.ReadGriFile(gri)
+            ptr = px.ReadGriFile(fname)
             # Set it.
             self._ptr = ptr
             self.owner = True
