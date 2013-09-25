@@ -104,7 +104,7 @@ class xf_Mesh:
         # Version:
         #  2013-09-23 @dalle   : First version
         
-        if self._ptr != None:
+        if self._ptr is not None:
             px.DestroyMesh(self._ptr)
             
 
