@@ -11,9 +11,8 @@ import re
 import _pyxflow as px
 # Mesh
 from pyxflow.Mesh import xf_Mesh
-
-class xf_Geom:
-    pass
+# Geom
+from pyxflow.Geom import xf_Geom
 
 class xf_DataSet:
     pass

@@ -33,6 +33,10 @@ static PyMethodDef Methods[] = {
 		"Create empty xf_Geom"},
 	{"DestroyGeom", px_DestroyGeom, METH_VARARGS,
 		"Destroy geom and free memory"},
+	{"nGeomComp", px_nGeomComp, METH_VARARGS,
+		"Get Geom->Comp pointer and Geom->nComp"},
+	{"GeomComp", px_GeomComp, METH_VARARGS,
+		"Get data from Geom->Comp"},
 	{"ReadGeomFile", px_ReadGeomFile, METH_VARARGS,
 		"Read '.geom' file to xf_Geom"},
 	// xf_All methods

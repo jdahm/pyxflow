@@ -19,7 +19,7 @@ px_CreateMesh(PyObject *self, PyObject *args)
 
 	// Allocate the mesh.
 	ierr = xf_Error(xf_CreateMesh(&Mesh));
-	if (ierr != xf_OK) PyErr_SetString(PyExc_RuntimeError, "");
+	if (ierr != xf_OK) return NULL;
 	
 	// Return the pointer.
 	return Py_BuildValue("n", Mesh);

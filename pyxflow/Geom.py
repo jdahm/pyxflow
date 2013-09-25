@@ -12,7 +12,7 @@ import pyxflow._pyxflow as px
 
 # ------- Class for xf_Geom objects -------
 class xf_Geom:
-    """A Python class for XFlow mesh objects"""
+    """A Python class for XFlow xf_Geom objects"""
     
     # Initialization method: 
     #  can be read from '.geom' file or existing binary object
@@ -59,6 +59,11 @@ class xf_Geom:
             self.owner = True
             # Exit the function
             return None
+        
+        # Read the number of components.
+        self.nComp = px.nGeomComp(self._ptr)
+        # Initialize the components
+        self.Comp = [xf_GeomComp(self._ptr, i) for i in range(self.nComp)]
             
             
     # Destructor method for xf_Mesh
@@ -76,5 +81,79 @@ class xf_Geom:
             px.DestroyGeom(self._ptr)
             
             
+# ---- Class for Geom Components ----
+class xf_GeomComp:
+    """A Python class for XFlow xf_GeomComp objects"""
+    
+    # Initialization method
+    def __init__(self, Geom, i=None):
+        """
+        GC = xf_GeomComp(Geom, Name=None, Type=None, BFGTitle=None, Data=None)
+        
+        INPUTS:
+           Geom     : pointer from xf_Geom object
+           Name     : name of component
+           Type     : component type
+           BFGTitle : name of corresponding boundary condition
+           Data     : data for component
+        
+        OUTPUTS:
+           GC       : an instance of the xf_GeomComp class
+        """
+        # Versions:
+        #  2013-09-25 @dalle   : First version
+        
+        # Set the initial fields.
+        self.Name = None
+        self.Type = None
+        self.BFGTitle = None
+        self.Data = None
+        # Check for bad inputs.
+        if Geom is None:
+            return None
+        
+        # Read from data if appropriate
+        if i is not None:
+            # Fields
+            self.Name, self.Type, self.BFGTitle, D = px.GeomComp(Geom, i)
             
-            
+        # Set data if possible.
+        if self.Type=="Spline" and D is not None:
+            # Initialize the component.
+            self.Data = xf_GeomCompSpline(D["Order"],
+                D["N"], D["X"], D["Y"])
+
+
+# ---- Class for xf_GeomCompSline (geometry splines) ----
+class xf_GeomCompSpline:
+    """ A Python class for XFlow xf_GeomCompSpline objects"""
+    
+    # Initialization method
+    def __init__(self, Order=None, N=None, X=None, Y=None):
+        """
+        GCS = xf_GeomCompSpline(Order, N, X, Y)
+        
+        INPUTS:
+           Order : spline interpolation order
+           N     : number of points in spline
+           X     : x-coordinates of spline points
+           Y     : y-coordinates of spline points
+           
+        OUTPUTS:
+           GCS   : an instance of the xf_GeomCompSpline class
+        """
+        # Versions:
+        #  2013-09-25 @dalle   : First version
+        
+        # Set the fields.
+        self.Order = Order
+        self.N = N
+        self.X = X
+        self.Y = Y
+
+
+
+
+
+
+
