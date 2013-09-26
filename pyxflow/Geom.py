@@ -76,7 +76,7 @@ class xf_Geom:
         # Version:
         #  2013-09-24 @dalle   : First version
         
-        if self._ptr is not None:
+        if self.owner and self._ptr is not None:
             px.DestroyGeom(self._ptr)
             
             

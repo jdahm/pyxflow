@@ -36,7 +36,10 @@ class xf_DataSet:
         """
         # Versions:
         #  2013-09-25 @dalle   : First version
-
+        
+        # Set the defaults.
+        self.nData = 0
+        
         # Check the parameters.
         if ptr is not None:
             # Set the pointer.
@@ -56,6 +59,9 @@ class xf_DataSet:
             self.owner = True
             # Exit the function
             return None
+            
+        # Get the number of components.
+        self.nData = px.nDataSetData(self._ptr)
     
     
     # xf_DataSet destructor method
@@ -69,7 +75,7 @@ class xf_DataSet:
         # Version:
         #  2013-09-25 @dalle   : First version
         
-        if self._ptr is not None:
+        if self.owner and self._ptr is not None:
             px.DestroyDataSet(self._ptr)
         
 

@@ -13,9 +13,10 @@ import _pyxflow as px
 from pyxflow.Mesh import xf_Mesh
 # Geom
 from pyxflow.Geom import xf_Geom
+# DataSet
+from pyxflow.DataSet import xf_DataSet
 
-class xf_DataSet:
-    pass
+
 
 class xf_Param:
     pass
@@ -37,8 +38,10 @@ class xf_All:
         (Mesh_ptr, Geom_ptr, DataSet_ptr, Param_ptr, EqnSet_ptr) = px.GetAllMembers(self._ptr)
 
         # Shadow the members inside this class
-        self.Mesh   = xf_Mesh(ptr=Mesh_ptr)
-        self.EqnSet = xf_EqnSet(EqnSet_ptr)
+        self.Mesh    = xf_Mesh(ptr=Mesh_ptr)
+        self.Geom    = xf_Geom(ptr=Geom_ptr)
+        self.EqnSet  = xf_EqnSet(EqnSet_ptr)
+        self.DataSet = xf_DataSet(ptr=DataSet_ptr) 
 
     def __del__(self):
         px.DestroyAll(self._ptr)

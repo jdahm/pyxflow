@@ -13,11 +13,11 @@
 PyObject *
 px_CreateDataSet(PyObject *self, PyObject *args)
 {
-	xf_DataSet *Dataset = NULL;
+	xf_DataSet *DataSet = NULL;
 	int ierr;
 
 	// Allocate the mesh.
-	ierr = xf_Error(xf_CreatDataSet(&DataSet));
+	ierr = xf_Error(xf_CreateDataSet(&DataSet));
 	if (ierr != xf_OK) return NULL;
 	
 	// Return the pointer.
