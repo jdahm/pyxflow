@@ -87,17 +87,14 @@ class xf_GeomComp:
     # Initialization method
     def __init__(self, Geom, i=None):
         """
-        GC = xf_GeomComp(Geom, Name=None, Type=None, BFGTitle=None, Data=None)
+        GC = xf_GeomComp(Geom, i=None)
         
         INPUTS:
-           Geom     : pointer from xf_Geom object
-           Name     : name of component
-           Type     : component type
-           BFGTitle : name of corresponding boundary condition
-           Data     : data for component
+           Geom : pointer from xf_Geom object
+           i    : index of component to extract
         
         OUTPUTS:
-           GC       : an instance of the xf_GeomComp class
+           GC   : an instance of the xf_GeomComp class
         """
         # Versions:
         #  2013-09-25 @dalle   : First version

@@ -53,6 +53,95 @@ OUTPUTS:
 */
 
 
+PyObject *
+px_GetData(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get types and titles of (and pointers to) each xf_Data in a DataSet
+
+CALL:
+  Title, Type, D, Data = px.GetData(DS, iData)
+  
+INPUTS:
+  DS    : pointer to xf_DataSet struct
+  iData : index of xf_Data to use
+  
+OUTPUTS:
+  Title : title of xf_Data struct
+  Type  : type of xf_Data being presented
+  D     : pointer to xf_Data (DataSet->D)
+  Data  : pointer to vector, vector group, etc. (DataSet->D->Data)
+*/
+
+
+PyObject *
+px_GetVectorGroup(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get number of and pointers to vectors in xf_VectorGroup
+  
+CALL:
+  nVector, V = px.GetVectorGroup(VG)
+  
+INPUTS:
+  VG : pointer to xf_VectorGroup struct
+  
+OUTPUTS:
+  nVector : number of vectors present
+  V       : list of pointers to vectors
+*/
+
+
+PyObject *
+px_GetVector(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Get information about xf_Vector from pointer
+  
+CALL:
+  nArray, Order, Basis, StateName, GA = px.GetVector(V)
+  
+INPUTS:
+  V : pointer to xf_Vector struct
+  
+OUTPUTS:
+  nArray    : number of arrays in vector
+  Order     : interpolation order for arrays
+  Basis     : name of basis for arrays
+  StateName : name of state described by arrays
+  GA        : list of pointers to GenArrays
+*/
+
+
+PyObject *
+px_GetGenArray(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+	Get data from xf_GenArray structure
+	
+CALL:
+	D = px.GetGenArray(GA)
+	
+INPUTS:
+	GA : pointer to xf_GenArray struct
+
+OUTPUTS:
+	D : dictionary of xf_GenArray information
+
+NOTES:
+  (1) The following parameters are defined for the dictionary. 
+      
+        D
+         ["n"]      : number of elements
+         ["r"]      : number of entries per element
+         ["vr"]     : variable number of degrees of freedom for each elem
+         ["iValue"] : integer data on the array
+         ["rValue"] : real-valued data on the array
+         
+      Depending on the GenArray, some of the values may be `None`
+*/
+
+
 
 
 PyObject *
