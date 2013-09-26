@@ -26,7 +26,7 @@ px_CreateGeom(PyObject *self, PyObject *args)
 }
 
 
-// Function to read mesh from .gri file
+// Function to read mesh from .geom file
 PyObject *
 px_ReadGeomFile(PyObject *self, PyObject *args)
 {

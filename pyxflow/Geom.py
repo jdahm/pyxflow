@@ -1,4 +1,4 @@
-"""File to interface with XFlow mesh objects in various forms"""
+"""File to interface with XFlow xf_Geom objects in various forms"""
 
 # Versions:
 #  2013-09-25 @dalle   : First version
@@ -34,8 +34,7 @@ class xf_Geom:
         If both keys are `None`, an empty mesh will be created.  Finally,
         if both keys are not `None`, an exception is raised.
         """
-    	
-        # Versions:
+    	# Versions:
         #  2013-09-25 @dalle   : First version
 
         # Check the parameters.

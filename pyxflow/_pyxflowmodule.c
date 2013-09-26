@@ -1,6 +1,7 @@
 #include <Python.h>
 #include "px_Mesh.h"
 #include "px_Geom.h"
+#include "px_DataSet.h"
 #include "px_All.h"
 
 // Steps to import the NumPy API
@@ -39,6 +40,15 @@ static PyMethodDef Methods[] = {
 		"Get data from Geom->Comp"},
 	{"ReadGeomFile", px_ReadGeomFile, METH_VARARGS,
 		"Read '.geom' file to xf_Geom"},
+	// xf_DataSet methods
+	{"CreateDataSet", px_CreateDataSet, METH_VARARGS, 
+		"Create empty xf_DataSet"},
+	{"DestroyDataSet", px_DestroyDataSet, METH_VARARGS,
+		"Destroy xf_DataSet and free memory"},
+	{"ReadDataSetFile", px_ReadDataSetFile, METH_VARARGS,
+		"Read '.data' file to xf_DataSet (requires xf_Mesh)"},
+	{"nDataSetData", px_nDataSetData, METH_VARARGS,
+		"Get number of xf_Data structs in xf_DataSet"},
 	// xf_All methods
 	{"CreateAll", px_CreateAll, METH_VARARGS,
 		"Create empty xf_All"},
