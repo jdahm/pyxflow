@@ -9,26 +9,31 @@
 #include <xf_Basis.h>
 
 
+#define TRINODE 3
+
 // Function to evaluate one GenArray on a basis.
 PyObject*
 px_InterpVector2D(PyObject *self, PyObject *args)
 {
 	xf_All *All;
+	xf_ElemGroup EG;
 	xf_VectorGroup *UG;
 	xf_Vector *U;
 	xf_GenArray *G;
 	xf_BasisData *PhiQ, *PhiU;
+	PyObject *PyX, *PyU, *PyT;
 	real **X=NULL, **u=NULL;
-	real *xn;
+	real *xn, *xyN, *xyG;
+	real *EU, *u0;
+	npy_intp dims[2];
 	enum xfe_BasisType QBasis, UBasis, pUBasis, LagBasis;
 	int **T;
 	int *T0;
-	int ierr, k, egrp, nEGrp, elem, nElem;
+	int ierr, k, i, d, egrp, nEGrp, elem, nElem;
 	int QOrder, UOrder, POrder, pPOrder;
 	int nx, nT, ix, iT;
-	int nn, nq, nt, dim, nr;
-	int sr = sizeof(real);
-	int si = sizeof(int);
+	int *igN;
+	int nn, nnq, nnu, nnp, nq, nt, dim, sr, nnmax, nnpmax;
 	
 	// Parse the inputs.
 	if (!PyArg_ParseTuple(args, "nn", &All, &UG))
@@ -39,7 +44,9 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 	// Number of element groups in Mesh
 	nEGrp = All->Mesh->nElemGroup;
 	// Number of states
-	nr = All->EqnSet->StateRank;
+	sr = All->EqnSet->StateRank;
+	// Dimension
+	dim = All->Mesh->Dim;
 	// That must equal number of arrays in vector
 	if (nEGrp != U->nArray) {
 		ierr = xf_Error(xf_INCOMPATIBLE);
@@ -53,12 +60,13 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 	}
 	
 	// Initialize counts
-	nx = 0;
+	nx = 0; nnmax = 0; nnpmax = 0;
 	nT = 0;
 	// Get the total number of triangles and points.
 	for (egrp=0; egrp<nEGrp; egrp++) {
 		// Geometry order and basis
 		QOrder = All->Mesh->ElemGroup[egrp].QOrder;
+		QBasis = All->Mesh->ElemGroup[egrp].QBasis;
 		// Previous order and basis
 		pPOrder = -1;
 		pUBasis = -1;
@@ -80,6 +88,10 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 				// Determine nn = # unknowns for elements in this group
 				ierr = xf_Error(xf_Order2nNode(UBasis, POrder, &nn));
 				if (ierr != xf_OK) return NULL;
+
+				// Determine nn = # unknowns for elements in this group
+				ierr = xf_Error(xf_Order2nNode(QBasis, POrder, &nnp));
+				if (ierr != xf_OK) return NULL;
 				
 				// Determine number of triangles in element.
 				ierr = xf_Error(px_Basis2Tri(UBasis, POrder, &nt, NULL));
@@ -89,19 +101,31 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 			nx += nn;
 			// Add to the number of triangles.
 			nT += nt;
+			// Update max number of nodes.
+			nnmax = max(nnmax, nn);
+			nnpmax = max(nnpmax, nnp);
+			
 		} // elem, element index 
 	} // egrp, GenArray (or ElementGroup) index
 	
 	// Allocate coordinates.
-	ierr = xf_Error(xf_Alloc2((void ***) &X, nx, 2, sr));
+	ierr = xf_Error(xf_Alloc2((void ***) &X, nx, dim, sizeof(real)));
 	if (ierr != xf_OK) return NULL;
 	// Allocate states.
-	ierr = xf_Error(xf_Alloc2((void ***) &u, nx, nr, sr));
+	ierr = xf_Error(xf_Alloc2((void ***) &u, nx, sr, sizeof(real)));
 	if (ierr != xf_OK) return NULL;
 	// Allocate triangles
-	ierr = xf_Error(xf_Alloc2((void ***) &T, nT, 3, si));
+	ierr = xf_Error(xf_Alloc2((void ***) &T, nT, TRINODE, sizeof(int)));
 	if (ierr != xf_OK) return NULL;
-	printf("Label 23\n");
+	// Allocate coordinates.
+	ierr = xf_Error(xf_Alloc((void **) &xyN, nnmax*dim, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
+	// Allocate global coordinates at subdivision nodes
+	ierr = xf_Error(xf_Alloc((void **) &xyG, nnpmax*dim, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
+	// Allocate states at subdivision nodes
+	ierr = xf_Error(xf_Alloc((void **) &u0, nnpmax*sr, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
 	
 	// Initialize indices
 	ix = 0;
@@ -113,13 +137,15 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 	PhiU = NULL;
 	// Get the total number of triangles and points.
 	for (egrp=0; egrp<nEGrp; egrp++) {
+		// Element group
+		EG = All->Mesh->ElemGroup[egrp];
 		// Geometry order and basis
-		QOrder = All->Mesh->ElemGroup[egrp].QOrder;
+		QOrder = EG.QOrder;
 		// Previous order and basis
 		pPOrder = -1;
 		pUBasis = -1;
 		// Number of elements in group
-		nElem = All->Mesh->ElemGroup[egrp].nElem;
+		nElem = EG.nElem;
 		
 		// Loop through elements
 		for (elem=0; elem<nElem; elem++) {
@@ -127,31 +153,44 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 			xf_InterpOrderBasis(U, egrp, elem, &UOrder, &UBasis);
 			// Order to be used.
 			POrder = (QOrder<UOrder) ? UOrder : QOrder;
+			
+			// Pull off the coefficients of the solution
+			EU = U->GenArray[egrp].rValue[elem];
+			
 			// Redetermine count if necessary.
 			if ((POrder != pPOrder) || (UBasis != pUBasis)) {
 				// Remember the most recent values.
 				pPOrder = POrder;
 				pUBasis = UBasis;
 				
-				// Determine nn = # unknowns for elements in this group
-				ierr = xf_Error(xf_Order2nNode(UBasis, POrder, &nn));
+				// Number of geometry nodes
+				ierr = xf_Error(xf_Order2nNode(QBasis, QOrder, &nnq));
 				if (ierr != xf_OK) return NULL;
 				
+				// Determine nn = # unknowns for elements in this group
+				ierr = xf_Error(xf_Order2nNode(UBasis, UOrder, &nnu));
+				if (ierr != xf_OK) return NULL;
+				
+				// Determine nn = # unknowns for elements in this group
+				ierr = xf_Error(xf_Order2nNode(QBasis, POrder, &nnp));
+				if (ierr != xf_OK) return NULL;
+				
+				/*
 				// Determine Lagrange basis. (not sure if this is right?)
 				ierr = xf_Error(xf_Basis2Lagrange(UBasis, &LagBasis));
 				if (ierr != xf_OK) return NULL;
-				
+				*/
 				// Obtain Lagrange node locations.
-				ierr = xf_Error(xf_LagrangeNodes(LagBasis, POrder, NULL, NULL, &xn));
+				ierr = xf_Error(xf_LagrangeNodes(QBasis, POrder, NULL, NULL, &xn));
 				if (ierr != xf_OK) return NULL;
 				
 				// Compute basis functions at Lagrange nodes.
-				ierr = xf_Error(xf_EvalBasis(UBasis, UOrder, xfe_False, nn, xn,
+				ierr = xf_Error(xf_EvalBasis(UBasis, UOrder, xfe_False, nnp, xn,
 					xfb_Phi, &PhiU));
 				if (ierr != xf_OK) return NULL;
 				
 				// Compute basis functions at Lagrange nodes.
-				ierr = xf_Error(xf_EvalBasis(QBasis, QOrder, xfe_False, nn, xn,
+				ierr = xf_Error(xf_EvalBasis(QBasis, QOrder, xfe_False, nnp, xn,
 					xfb_Phi, &PhiQ));
 				if (ierr != xf_OK) return NULL;
 				
@@ -159,15 +198,71 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 				ierr = xf_Error(px_Basis2Tri(UBasis, POrder, &nt, &T0));
 				if (ierr != xf_OK) return NULL;
 			}
+			
+			// Geometry nodes
+			igN = EG.Node[elem];
+			// Allocate xyN...
+			// Loop through nodes
+			for (k=0; k<nnq; k++) {
+				for (d=0; d<dim; d++) {
+					// Pull of node coordinates.
+					xyN[k*dim+d] = All->Mesh->Coord[igN[k]][d];
+				}
+			}
+			
+			// Calculate global coordinates of subdivision nodes.
+			xf_MxM_Set(PhiQ->Phi, xyN, nnp, nnq, dim, xyG);
+			// Interpolate the state onto those nodes.
+			xf_MxM_Set(PhiU->Phi, EU, nnp, nnu, sr, u0);
+			
+			// Loop through subdivision nodes
+			for (i=0; i<nnp; i++) {
+				for (d=0; d<dim; d++) {
+					// Coordinates
+					X[ix+i][d] = xyG[i*nnp+d];
+				}
+				for (k=0; k<sr; k++) {
+					// States
+					u[ix+i][k] = u0[i*nnp+k];
+				}
+			}
+			
+			// Loop through the triangles.
+			for (i=0; i<nt; i++) {
+				for (k=0; k<TRINODE; k++) {
+					T[iT+i][k] = T0[i*nt+k];
+				}
+			}
+			
 			// Add to the number of elements.
-			ix += nn;
+			ix += nnp;
 			// Add to the number of triangles.
 			iT += nt;
 		} // elem, element index 
 	} // i, GenArray (or ElementGroup) index
 	
+	
+	// Number of nodes: output for Python
+	dims[0] = nx;
+	// Number of coordinates
+	dims[1] = dim;
+	// Build the coordinate array.
+	PyX = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, *X);
+	
+	// Number of states (from EqnSet)
+	dims[1] = sr;
+	// Build the state array.
+	PyU = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, *u);
+	
+	// Number of triangles
+	dims[0] = nT;
+	// Number of nodes per shape
+	dims[1] = TRINODE;
+	// Build the triangulation.
+	PyT = PyArray_SimpleNewFromData(2, dims, NPY_INT, *T);
+	
 	// Output
-	return Py_BuildValue("ii", nx, nT);
+	return Py_BuildValue("OOO", PyX, PyU, PyT);
 }
 
 
@@ -301,9 +396,6 @@ px_Basis2Tri(enum xfe_BasisType UBasis, int POrder, int *pnt, int **pT)
 			} // i
 		} // j
 		
-		for (i=0; i<3*nt; i++) {
-			printf("T[%i] = %i\n", i, T[i]);
-		}
 		break;
 	default:
 		ierr = xf_Error(xf_NOT_SUPPORTED);
