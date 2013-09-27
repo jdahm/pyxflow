@@ -2,6 +2,7 @@
 #include "px_Mesh.h"
 #include "px_Geom.h"
 #include "px_DataSet.h"
+#include "px_Plot.h"
 #include "px_All.h"
 
 // Steps to import the NumPy API
@@ -68,6 +69,9 @@ static PyMethodDef Methods[] = {
 		"Writes all to binary file"},
 	{"GetAllMembers", px_GetAllMembers, METH_VARARGS,
 		"Returns a tuple of pointers to the members of the xf_All"},
+	// Plotting methods
+	{"InterpVector2D", px_InterpVector2D, METH_VARARGS,
+		"Creates network of triangles and values for plotting"},
 	{NULL, NULL, 0, NULL}
 };
 

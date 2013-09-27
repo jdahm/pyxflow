@@ -20,6 +20,7 @@ _pyxflow = Extension("_pyxflow",
 			"px_Geom.c",
 			"px_Mesh.c",
 			"px_DataSet.c",
+			"px_Plot.c",
 			"px_All.c"])
 
 setup(
