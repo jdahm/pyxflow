@@ -13,6 +13,7 @@ PyObject*
 px_InterpVector2D(PyObject *self, PyObject *args)
 {
 	xf_All *All;
+	xf_VectorGroup *VG;
 	xf_Vector *V;
 	xf_GenArray *G;
 	real *u;
@@ -24,9 +25,11 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 	int nn, nq, dim;
 	
 	// Parse the inputs.
-	if (!PyArg_ParseTuple(args, "nn", &All, &V))
+	if (!PyArg_ParseTuple(args, "nn", &All, &VG))
 		return NULL;
 	
+	// Get the vector (temporary...)
+	V = VG->Vector[0];
 	// Number of element groups in Mesh
 	nEGrp = All->Mesh->nElemGroup;
 	// That must equal number of arrays in vector

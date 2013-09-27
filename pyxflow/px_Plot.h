@@ -9,11 +9,11 @@ PURPOSE:
   Interpolate vector of a solution on to system of triangles
 	
 CALL:
-  x, y, u, T = px.InterpVector2D(A, V)
+  x, y, u, T = px.InterpVector2D(A, VG)
 	
 INPUTS:
-  A : pointer to xf_All structure
-  V : pointer to xf_Vector structure
+  A  : pointer to xf_All structure
+  VG : pointer to xf_VectorGroup structure
 
 OUTPUTS:
   x : NumPy array of x-coordinates
