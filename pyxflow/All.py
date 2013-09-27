@@ -31,17 +31,19 @@ class xf_All:
 
     def __init__(self, fname, DefaultFlag=True):
 
-	# Create an xf_All instance in memory
+        # Create an xf_All instance in memory
         self._ptr = px.ReadAllInputFile(fname, True)
 
-	# Get pointers to all members
-        (Mesh_ptr, Geom_ptr, DataSet_ptr, Param_ptr, EqnSet_ptr) = px.GetAllMembers(self._ptr)
+        # Get pointers to all members
+        (Mesh_ptr, Geom_ptr, DataSet_ptr, Param_ptr, 
+            EqnSet_ptr) = px.GetAllMembers(self._ptr)
 
         # Shadow the members inside this class
         self.Mesh    = xf_Mesh(ptr=Mesh_ptr)
         self.Geom    = xf_Geom(ptr=Geom_ptr)
         self.EqnSet  = xf_EqnSet(EqnSet_ptr)
-        self.DataSet = xf_DataSet(ptr=DataSet_ptr) 
+        self.DataSet = xf_DataSet(ptr=DataSet_ptr)
+        
 
     def __del__(self):
         px.DestroyAll(self._ptr)

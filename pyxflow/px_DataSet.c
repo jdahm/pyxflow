@@ -67,17 +67,14 @@ px_nDataSetData(PyObject *self, PyObject *args)
 	D = DataSet->Head;
 	
 	// Loop until the tail is found (or an error).
-	while (D != NULL)
+	while (D != NULL && nData < 100)
 	{
 		// Increase the Data count.
 		nData++;
 		// Check if it's the last data set.
 		if (D == DataSet->Tail) break;
-	}
-	// Check if an error was found.
-	if (D == NULL){
-		PyErr_SetString(PyExc_ReferenceError, "No DataSet->Data could be found.");
-		return NULL;
+		// Move to next DataSet.
+		D = D->Next;
 	}
 	
 	// Return the number of entries.
@@ -151,8 +148,9 @@ px_GetVector(PyObject *self, PyObject *args)
 {
 	xf_Vector *V;
 	PyObject *GA, *Order, *Basis, *StateName;
+	const char *UBasis;
 	int i;
-	int nArray;
+	int nArray, StateRank;
 	Py_ssize_t j;
 	
 	// Parse the Python inputs.
@@ -167,23 +165,58 @@ px_GetVector(PyObject *self, PyObject *args)
 	// Lists of orders and bases
 	Order = PyList_New((Py_ssize_t) nArray);
 	Basis = PyList_New((Py_ssize_t) nArray);
-	// List of StateNames
-	StateName = PyList_New((Py_ssize_t) nArray);
 	// Loop through the GenArrays
 	for (i=0; i<nArray; i++) {
 		// Set the pointer to V->GenArray[i].
 		PyList_SetItem(GA, i, Py_BuildValue("n", V->GenArray+i));
+		
 		// Set the order.
-		PyList_SetItem(Order, i, Py_BuildValue("i", V->Order[i]));
-		// Set the basis name.
-		PyList_SetItem(Basis, i, Py_BuildValue("s", \
-			xfe_BasisName[V->Basis[i]]));
-		// Set the StateName
-		PyList_SetItem(StateName, i, Py_BuildValue("s", V->StateName[i]));
+		if (V->Order != NULL) {
+			// Use the value.
+			PyList_SetItem(Order, i, Py_BuildValue("i", V->Order[i]));
+		} else {
+			// Empty Order
+			Py_INCREF(Py_None);
+			PyList_SetItem(Order, i, Py_None);
+		}
+		
+		// Store the Basis.
+		if (V->Basis != NULL) {
+			// Basis name
+			UBasis = xfe_BasisName[V->Basis[i]];
+			// Use the value.
+			PyList_SetItem(Basis, i, Py_BuildValue("s", UBasis));
+		} else {
+			// Empty Basis field
+			Py_INCREF(Py_None);
+			PyList_SetItem(Basis, i, Py_None);
+		}
+	}
+	
+	// Check the StateRank
+	if (V->StateRank == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Vector state rank is NULL.");
+		return NULL;
+	}
+	// StateRank
+	StateRank = V->StateRank;
+	// Set the StateNames if appropriate.
+	if (V->StateName != NULL) {
+		// Initialize list of StateNames.
+		StateName = PyList_New((Py_ssize_t) StateRank);
+		// Loop through the states.
+		for (i=0; i<StateRank; i++) {
+			// Use the value.
+			PyList_SetItem(StateName, i, Py_BuildValue("s", V->StateName[i]));
+		}
+	} else {
+		// Empty StateName field
+		Py_INCREF(Py_None);
+		StateName = Py_None;
 	}
 	
 	// Output
-	Py_BuildValue("iOOOO", nArray, Order, Basis, StateName, GA);
+	return Py_BuildValue("iOOOO", nArray, Order, Basis, StateName, GA);
 }
 
 

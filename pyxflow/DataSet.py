@@ -117,7 +117,7 @@ class xf_Data:
         if i is not None:
             # Fields
             self.Title, self.Type, self._ptr, _Data = px.GetData(DataSet, i)
-                
+        
         # Do a switch on the type
         if self.Type == 'VectorGroup':
             # Assign the vector group
@@ -152,7 +152,7 @@ class xf_VectorGroup:
         # Get the pointers to the vectors.
         self.nVector, V = px.GetVectorGroup(ptr)
         # Get the vectors.
-        #self.Vector = V
+        #self.V = V
         self.Vector = [xf_Vector(Vi) for Vi in V]
         
      
