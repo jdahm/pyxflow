@@ -215,22 +215,35 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 			// Interpolate the state onto those nodes.
 			xf_MxM_Set(PhiU->Phi, EU, nnp, nnu, sr, u0);
 			
+			/*if (elem < 6) {
+				printf("elem=%i\n", elem);
+				printf("  nnp=%i, nnq=%i, nnu=%i\n", nnp, nnq, nnu);
+				for (i=0; i<nnp; i++) {
+					//printf("  x[%i]=%+.4e, y[%i]=%+.4e\n", i,xyG[i*dim],i,xyG[i*dim+1]);
+					printf("  ");
+					for (k=0; k<sr; k++) {
+						printf("u[%i,%i]=%+.4e, ", i,k,u0[i*sr+k]);
+					}
+					printf("\n");
+				}
+			}*/
+			
 			// Loop through subdivision nodes
 			for (i=0; i<nnp; i++) {
 				for (d=0; d<dim; d++) {
 					// Coordinates
-					X[ix+i][d] = xyG[i*nnp+d];
+					X[ix+i][d] = xyG[i*dim+d];
 				}
 				for (k=0; k<sr; k++) {
 					// States
-					u[ix+i][k] = u0[i*nnp+k];
+					u[ix+i][k] = u0[i*sr+k];
 				}
 			}
 			
 			// Loop through the triangles.
 			for (i=0; i<nt; i++) {
 				for (k=0; k<TRINODE; k++) {
-					T[iT+i][k] = T0[i*nt+k];
+					T[iT+i][k] = T0[i*TRINODE+k]+ix;
 				}
 			}
 			
