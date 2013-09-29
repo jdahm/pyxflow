@@ -112,7 +112,7 @@ px_nBFaceGroup(PyObject *self, PyObject *args)
 		return NULL;
 	
 	// Output
-	return Py_BuildValue("in", Mesh->nBFaceGroup, Mesh->BFaceGroup);
+	return Py_BuildValue("i", Mesh->nBFaceGroup);
 }
 
 
@@ -120,20 +120,24 @@ px_nBFaceGroup(PyObject *self, PyObject *args)
 PyObject *
 px_BFaceGroup(PyObject *self, PyObject *args)
 {
+	xf_Mesh *Mesh = NULL;
 	xf_BFaceGroup *BFG = NULL;
 	int iBFG, nBFace;
 	const char * Title;
 	
 	// Get the pointer to the xf_BFaceGroup
-	if (!PyArg_ParseTuple(args, "ni", &BFG, &iBFG))
+	if (!PyArg_ParseTuple(args, "ni", &Mesh, &iBFG))
 		return NULL;
 	
+	// Get the BFaceGroup
+	BFG = Mesh->BFaceGroup;
+
 	// Read the title
 	Title = BFG[iBFG].Title;
 	nBFace = BFG[iBFG].nBFace;
 	
 	// Output: (Title, nBFace, _BFace[0])
-	return Py_BuildValue("sin", Title, nBFace, BFG[iBFG].BFace);
+	return Py_BuildValue("sin", Title, nBFace, &BFG[iBFG]);
 }
 
 
@@ -148,7 +152,7 @@ px_nElemGroup(PyObject *self, PyObject *args)
 		return NULL;
 	
 	// Output
-	return Py_BuildValue("in", Mesh->nElemGroup, Mesh->ElemGroup);
+	return Py_BuildValue("i", Mesh->nElemGroup);
 }
 
 
@@ -156,6 +160,7 @@ px_nElemGroup(PyObject *self, PyObject *args)
 PyObject *
 px_ElemGroup(PyObject *self, PyObject *args)
 {
+	xf_Mesh *Mesh = NULL;
 	xf_ElemGroup *EG = NULL;
 	int i, nElem, nNode, QOrder;
 	const char *QBasis;
@@ -163,8 +168,11 @@ px_ElemGroup(PyObject *self, PyObject *args)
 	npy_intp dims[2];
 	
 	// Get the pointer to the xf_BFaceGroup
-	if (!PyArg_ParseTuple(args, "ni", &EG, &i))
+	if (!PyArg_ParseTuple(args, "ni", &Mesh, &i))
 		return NULL;
+	
+	// Assign the element group
+	EG = Mesh->ElemGroup;
 	
 	// Read the data
 	nElem  = EG[i].nElem;

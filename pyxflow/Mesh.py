@@ -75,20 +75,16 @@ class xf_Mesh:
         self.Dim, self.nNode, self.Coord = px.GetNodes(self._ptr)
         
         # Basic boundary condition info
-        self.nBFaceGroup, self._BFaceGroup = px.nBFaceGroup(self._ptr)
-        # Initialize the BFaceGroup
-        self.BFaceGroup = []
-        # Get the data.
-        for i in range(self.nBFaceGroup):
-            self.BFaceGroup.append(xf_BFaceGroup(ptr=self._BFaceGroup, i=i))
+        self.nBFaceGroup = px.nBFaceGroup(self._ptr)
+        # Get the BFaceGroups
+        self.BFaceGroup = [xf_BFaceGroup(ptr=self._ptr, i=i) 
+            for i in range(self.nBFaceGroup)]
         
         # Basic element group info
-        self.nElemGroup, self._ElemGroup = px.nElemGroup(self._ptr)
-        # Initialize the ElemGroup
-        self.ElemGroup = []
-        # Get the data.
-        for i in range(self.nElemGroup):
-            self.ElemGroup.append(xf_ElemGroup(ptr=self._ElemGroup, i=i))
+        self.nElemGroup = px.nElemGroup(self._ptr)
+        # Get the ElemGroups
+        self.ElemGroup = [xf_ElemGroup(ptr=self._ptr, i=i) 
+            for i in range(self.nElemGroup)]
         
 
 
@@ -115,6 +111,7 @@ class xf_BFaceGroup:
     """
     # Versions:
     #   2013-09-24 @dalle   : _pyxflow version
+    #   2013-09-29 @dalle   : changed ptr to Mesh instead of BFaceGroup
     
     # Initialization method
     def __init__(self, Title=None, nBFace=None, ptr=None, i=None):
@@ -122,14 +119,14 @@ class xf_BFaceGroup:
         self.Title  = Title
         self.nBFace = nBFace
         self.BFace  = None
-        self._BFace = None
+        self._ptr   = None
         # Check for a pointer.
         if ptr is not None:
             # index
             if i is None:
                 i = 0
             # Fields
-            self.Title, self.nBFace, self._BFace = px.BFaceGroup(ptr, i)
+            self.Title, self.nBFace, self._ptr = px.BFaceGroup(ptr, i)
             
 
 # --- Class for boundary face groups ---
@@ -140,6 +137,7 @@ class xf_ElemGroup:
     """
     # Versions:
     #   2013-09-24 @dalle   : _pyxflow version
+    #   2013-09-29 @dalle   : changed ptr to Mesh instead of ElemGroup
     
     # Initialization method
     def __init__(self, ptr=None, i=None):

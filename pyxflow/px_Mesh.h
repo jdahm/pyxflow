@@ -76,17 +76,16 @@ PyObject *
 px_nBFaceGroup(PyObject *self, PyObject *args);
 /*
 PURPOSE:
-  Get number of boundary conditions and corresponding pointer
+  Get number of boundary conditions
   
 CALL:
-  (nBFaceGroup, BFG) = px.nBFaceGroup(M)
+  nBFG = px.nBFaceGroup(M)
 
 INPUTS:
   M : xf_Mesh pointer
 
 OUTPUTS:
-  nBFaceGroup : number of BFaceGroup structs in xf_Mesh
-  BFG         : pointer to Mesh->BFaceGroup
+  nBFG : number of xf_BFaceGroup structs in xf_Mesh
 */
 
 
@@ -97,16 +96,16 @@ PURPOSE:
   Get basic information from a boundary face group
   
 CALL:
-  (Title, nBFace, BF) = px.BFaceGroup(BFG, iBFG)
+  (Title, nBFace, BFG) = px.BFaceGroup(M, iBFG)
   
 INPUTS:
-  BFG  : pointer to Mesh->BFaceGroup
+  M    : pointer to xf_Mesh
   iBFG : index of boundary face group
   
 OUTPUTS:
   Title  : title of BFace group, Mesh->BFaceGroup[i]->Title
   nBFace : number of BFaces in BFaceGroup[i]
-  BF     : pointer to Mesh->BFaceGroup[i]->BFace
+  BFG    : pointer to Mesh->BFaceGroup[i]
 */
 
 
@@ -117,14 +116,13 @@ PURPOSE:
   Get number of element groups and corresponding pointer
   
 CALL:
-  (nElemGroup, EG) = px.nElemGroup(M)
+  nEG = px.nElemGroup(M)
 
 INPUTS:
   M : xf_Mesh pointer
 
 OUTPUTS:
-  nElemGroup : number of xf_ElemGroup structs in xf_Mesh
-  EG         : pointer to Mesh->ElemGroup
+  nEG : number of xf_ElemGroup structs in xf_Mesh
 */
 
 
@@ -135,11 +133,11 @@ PURPOSE:
   Get basic information from an element group
   
 CALL:
-  (nElem, nNode, QOrder, QBasis, Node) = px.ElemGroup(EG, i)
+  (nElem, nNode, QOrder, QBasis, Node) = px.ElemGroup(M i)
   
 INPUTS:
-  EG : pointer to Mesh->ElemGroup
-  i  : index of element group
+  M : pointer to xf_Mesh
+  i : index of element group
   
 OUTPUTS:
   nElem  : number of elements in group, Mesh->ElemGroup[i].nElem
