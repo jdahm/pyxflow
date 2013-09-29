@@ -7,6 +7,8 @@
 # ------- Modules required -------
 # Used for parsing input from files
 import re
+# Matplotlit essentials
+import matplotlib.pyplot as plt
 # The background pyxflow workhorse module
 import _pyxflow as px
 # Mesh
@@ -15,6 +17,7 @@ from pyxflow.Mesh import xf_Mesh
 from pyxflow.Geom import xf_Geom
 # DataSet
 from pyxflow.DataSet import xf_DataSet
+
 
 
 
@@ -47,4 +50,52 @@ class xf_All:
 
     def __del__(self):
         px.DestroyAll(self._ptr)
+        
+    def Plot(self):
+        """
+        All = xf_All(...)
+        All.Plot()
+        
+        INPUTS:
+        
+        
+        OUTPUTS:
+        
+        
+        This is the plotting method for the xf_All class.  More capabilities
+        will be added.
+        """
+        # Versions:
+        #  2013-09-29 @dalle   : First version
+        
+        # Check for a DataSet
+        if not (self.DataSet.nData >= 1):
+            return None
+        
+        # Check that we have a vector group.
+        if not (self.DataSet.Data[0].Type == 'VectorGroup'):
+            return None
+            
+        # This is for 2D right now!
+        if self.Mesh.Dim != 2:
+            return None
+        
+        # Get the vector group.
+        UG = self.DataSet.Data[0].Data
+        
+        # Get the data and triangulation.
+        X, u, T = px.InterpVector2D(self._ptr, UG._ptr)
+        
+        # Process.....
+        
+        
+        # Draw the plot
+        # Using density for now.
+        h = plt.tripcolor(X[:,0], X[:,1], T, u[:,0], shading='gouraud')
+        
+        # return the handle
+        return h
+        
+        
+        
 
