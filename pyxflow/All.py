@@ -68,9 +68,9 @@ class xf_All:
         will be added.
         
         NOTES:
-           (1) The 'syrange' keyword is specified in the form
+           (1) The 'xyrange' keyword is specified in the form
            
-                   (xmin, ymin, xmax, ymax)
+                   [xmin, xmax, ymin, ymax]
                
                However, inputs such as `xyrange=(0,0,None,None)` are also
                acceptable.  In this case, the minimum value for both coordinates
@@ -96,39 +96,20 @@ class xf_All:
         if xyrange is not None:
             # Don't override values directly specified.
             if xmin is None: xmin = xyrange[0]
-            if ymin is None: ymin = xyrange[1]
-            if xmax is None: xmax = xyrange[2]
-            if ymax is None: ymax = xyrange[3] 
+            if xmax is None: xmax = xyrange[1]
+            if ymin is None: ymin = xyrange[2]
+            if ymax is None: ymax = xyrange[3]
+        # Make sure the values are not None before handing to C function.
+        if xmin is None: xmin = self.Mesh.Coord[:,0].min()
+        if xmax is None: xmax = self.Mesh.Coord[:,0].max()
+        if ymin is None: ymin = self.Mesh.Coord[:,1].min()
+        if ymax is None: ymax = self.Mesh.Coord[:,1].max()
         # Get the vector group.
         UG = self.DataSet.Data[0].Data
+        # Limits on plot window
+        xlim = [xmin, xmax, ymin, ymax]
         # Get the data and triangulation.
-        X, u, T = px.InterpVector2D(self._ptr, UG._ptr)
-        
-        # Process which triangles to plot.
-        # Process minimum x-coordinates
-        if xmin is not None:
-            # Determine which triangles pass the test.
-            ix = X[T,0].max(axis=1) >= xmin
-            # Delete the failing triangles.
-            T = T[ix,:]
-        # Process minimum y-coordinates.
-        if ymin is not None:
-            # Determine which triangles pass the test.
-            ix = X[T,1].max(axis=1) >= ymin
-            # Delete the failing triangles.
-            T = T[ix,:]
-        # Process maximum x-coordinates.
-        if xmax is not None:
-            # Determine which triangles pass the test.
-            ix = X[T,0].min(axis=1) <= xmax
-            # Delete the failing triangles.
-            T = T[ix,:]
-        # Process maximum y-coordinates.
-        if ymax is not None:
-            # Determine which triangles pass the test.
-            ix = X[T,1].min(axis=1) <= ymax
-            # Delete the failing triangles.
-            T = T[ix,:]
+        X, u, T = px.InterpVector(self._ptr, UG._ptr, xlim)
         
         # Draw the plot
         # Using density for now.
