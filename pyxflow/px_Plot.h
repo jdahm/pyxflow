@@ -3,13 +3,13 @@
 
 
 PyObject *
-px_InterpVector2D(PyObject *self, PyObject *args);
+px_InterpVector(PyObject *self, PyObject *args);
 /*
 PURPOSE:
   Interpolate vector of a solution on to system of triangles
 	
 CALL:
-  x, y, u, T = px.InterpVector2D(A, VG)
+  x, y, u, T = px.InterpVector(A, VG)
 	
 INPUTS:
   A  : pointer to xf_All structure

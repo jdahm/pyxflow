@@ -167,11 +167,11 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 				ierr = xf_Error(xf_Order2nNode(QBasis, QOrder, &nnq));
 				if (ierr != xf_OK) return NULL;
 				
-				// Determine nn = # unknowns for elements in this group
+				// Determine nn = # unknowns for elements in this group.
 				ierr = xf_Error(xf_Order2nNode(UBasis, UOrder, &nnu));
 				if (ierr != xf_OK) return NULL;
 				
-				// Determine nn = # unknowns for elements in this group
+				// Determine nn = # unknowns for elements in this group.
 				ierr = xf_Error(xf_Order2nNode(QBasis, POrder, &nnp));
 				if (ierr != xf_OK) return NULL;
 				
@@ -214,19 +214,6 @@ px_InterpVector2D(PyObject *self, PyObject *args)
 			xf_MxM_Set(PhiQ->Phi, xyN, nnp, nnq, dim, xyG);
 			// Interpolate the state onto those nodes.
 			xf_MxM_Set(PhiU->Phi, EU, nnp, nnu, sr, u0);
-			
-			/*if (elem < 6) {
-				printf("elem=%i\n", elem);
-				printf("  nnp=%i, nnq=%i, nnu=%i\n", nnp, nnq, nnu);
-				for (i=0; i<nnp; i++) {
-					//printf("  x[%i]=%+.4e, y[%i]=%+.4e\n", i,xyG[i*dim],i,xyG[i*dim+1]);
-					printf("  ");
-					for (k=0; k<sr; k++) {
-						printf("u[%i,%i]=%+.4e, ", i,k,u0[i*sr+k]);
-					}
-					printf("\n");
-				}
-			}*/
 			
 			// Loop through subdivision nodes
 			for (i=0; i<nnp; i++) {
@@ -295,7 +282,7 @@ OUTPUTS:
   nt : number of triangles
   T  : (optional) [nT x 3] matrix with `nt` more rows assigned
 */
-extern int
+int
 px_Basis2Tri(enum xfe_BasisType UBasis, int POrder, int *pnt, int **pT)
 {
 	int ierr, nt, i, j, k, ii;
