@@ -10,6 +10,7 @@
 #include <xf_String.h>
 
 
+/******************************************************************/
 // Function to create an empty geom.
 PyObject *
 px_CreateGeom(PyObject *self, PyObject *args)
@@ -17,7 +18,7 @@ px_CreateGeom(PyObject *self, PyObject *args)
 	xf_Geom *Geom = NULL;
 	int ierr;
 
-	// Allocate the mesh.
+	// Create the geom.
 	ierr = xf_Error(xf_CreateGeom(&Geom));
 	if (ierr != xf_OK) return NULL;
 	
@@ -26,7 +27,8 @@ px_CreateGeom(PyObject *self, PyObject *args)
 }
 
 
-// Function to read mesh from .geom file
+/******************************************************************/
+// Function to read geom from .geom file
 PyObject *
 px_ReadGeomFile(PyObject *self, PyObject *args)
 {
@@ -38,7 +40,7 @@ px_ReadGeomFile(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &fname))
 		return NULL;
 	
-	// Allocate the mesh.
+	// Create the geom.
 	ierr = xf_Error(xf_CreateGeom(&Geom));
 	if (ierr != xf_OK) return NULL;
 	
@@ -51,6 +53,30 @@ px_ReadGeomFile(PyObject *self, PyObject *args)
 }
 
 
+/******************************************************************/
+// Function to write geom to .geom file
+PyObject *
+px_WriteGeomFile(PyObject *self, PyObject *args)
+{
+	xf_Geom *Geom = NULL;
+	const char *fname;
+	int ierr;
+	
+	// Parse the Python inputs.
+	if (!PyArg_ParseTuple(args, "ns", &Geom, &fname))
+		return NULL;
+	
+	// Write the file.
+	ierr = xf_Error(xf_WriteGeomFile(Geom, fname));
+	if (ierr != xf_OK) return NULL;
+	
+	// Nothing to return.
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+/******************************************************************/
 // Function to extract the number of geom components
 PyObject *
 px_nGeomComp(PyObject *self, PyObject *args)
@@ -66,6 +92,7 @@ px_nGeomComp(PyObject *self, PyObject *args)
 }
 
 
+/******************************************************************/
 // Function to read the Geom->Comp information
 PyObject *
 px_GeomComp(PyObject *self, PyObject *args)
@@ -129,7 +156,7 @@ px_GeomComp(PyObject *self, PyObject *args)
 
 
 
-
+/******************************************************************/
 // Function to destroy the mesh
 PyObject *
 px_DestroyGeom(PyObject *self, PyObject *args)

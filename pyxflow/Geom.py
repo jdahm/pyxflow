@@ -78,7 +78,33 @@ class xf_Geom:
         
         if self.owner and self._ptr is not None:
             px.DestroyGeom(self._ptr)
-            
+    
+    
+    # Write method
+    def Write(self, fname):
+        """
+        Geom.Write(fname)
+        
+        INPUTS:
+           Geom  : instance of the xf_Geom class
+           fname : name of geom file to write
+        
+        OUTPUTS:
+           None
+        
+        This method writes an xf_Geom instance to file.
+        
+        """
+        # Versions:
+        #  2013-09-30 @dalle   : First version
+        
+        # Use the low-level API.
+        px.WriteGeomFile(self._ptr, fname)
+        # Nothing to return
+        return None
+        
+    
+    
             
 # ---- Class for Geom Components ----
 class xf_GeomComp:

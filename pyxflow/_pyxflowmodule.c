@@ -41,6 +41,8 @@ static PyMethodDef Methods[] = {
 		"Get data from Geom->Comp"},
 	{"ReadGeomFile", px_ReadGeomFile, METH_VARARGS,
 		"Read '.geom' file to xf_Geom"},
+	{"WriteGeomFile", px_WriteGeomFile, METH_VARARGS,
+		"Write '.geom' file"},
 	// xf_DataSet methods
 	{"CreateDataSet", px_CreateDataSet, METH_VARARGS, 
 		"Create empty xf_DataSet"},

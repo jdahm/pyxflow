@@ -36,6 +36,24 @@ OUTPUTS:
 
 
 PyObject *
+px_WriteGeomFile(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Write a '.geom' file from an xf_Geom structure
+  
+CALL:
+  px.WriteGeomFile(G, fname)
+  
+INPUTS:
+  G     : pointer to xf_Geom
+  fname : name of "geom" file
+  
+OUTPUTS:
+  None
+*/
+
+
+PyObject *
 px_nGeomComp(PyObject *self, PyObject *args);
 /*
 PURPOSE:
