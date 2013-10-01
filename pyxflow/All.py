@@ -5,8 +5,6 @@
 #  2013-09-23 @jdahm   : Integrated C-API
 
 # ------- Modules required -------
-# Used for parsing input from files
-import re
 # Matplotlit essentials
 import matplotlib.pyplot as plt
 # The background pyxflow workhorse module
