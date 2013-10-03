@@ -51,15 +51,16 @@ class xf_All:
     def __del__(self):
         px.DestroyAll(self._ptr)
         
-    def Plot(self, xyrange=None, scalar=None,
+    def Plot(self, xyrange=None, scalar=None, mesh=False,
         xmin=None, xmax=None, ymin=None, ymax=None):
         """
         All = xf_All(...)
-        h_t = All.Plot(xyrange=None, scalar=None)
+        h_t = All.Plot(xyrange=None, scalar=None, mesh=False)
         
         INPUTS:
            xyrange : list of coordinates to plot (Note 1)
            scalar  : name of scalar to plot (Note 2)
+           mesh    : flag to draw a mesh
         
         OUTPUTS:
            h_t     : <matplotlib.pyplot.tripcolor> instance
@@ -149,9 +150,14 @@ class xf_All:
         else:
             raise NotImplementedError("Equation set not implemented.")
         
-        # Draw the plot
-        # Using density for now.
+        # Draw the requested scalar.
         h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
+        # Check for a grid.
+        if mesh is True:
+            EG = self.Mesh.ElemGroup[0]
+            j_p = EG.Node[:, [0,3,15,12,0]]
+            X_p = self.Mesh.Coord
+            h = [plt.plot(X_p[j,0], X_p[j,1], 'k-') for j in j_p]
         
         # return the handle
         return h_t
