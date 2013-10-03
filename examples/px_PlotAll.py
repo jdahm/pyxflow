@@ -34,11 +34,13 @@ def main(argv):
     else:
         ofile = argv[2]
     # Region
-    xyrange = [-1, 2, -1, 1.3]
+    xyrange = [-1, 2, -0.85, 1.41]
     # Read the file.
     All = px.xf_All(ifile)
     # Plot it.
-    All.Plot(xyrange=xyrange)
+    h_t = All.Plot(xyrange=xyrange)
+    # Change the colormap.
+    h_t.set_cmap('PRGn_r')
     # Set axes to equal.
     plt.axis("equal")
     # Restrict plot to requested window.

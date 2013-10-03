@@ -7,6 +7,8 @@
 # ------- Modules required -------
 # Matplotlit essentials
 import matplotlib.pyplot as plt
+# Numeric functions
+import numpy as np
 # The background pyxflow workhorse module
 import _pyxflow as px
 # Mesh
@@ -49,14 +51,15 @@ class xf_All:
     def __del__(self):
         px.DestroyAll(self._ptr)
         
-    def Plot(self, xyrange=None,
+    def Plot(self, xyrange=None, scalar=None,
         xmin=None, xmax=None, ymin=None, ymax=None):
         """
         All = xf_All(...)
-        h_t = All.Plot(xyrange=None)
+        h_t = All.Plot(xyrange=None, scalar=None)
         
         INPUTS:
            xyrange : list of coordinates to plot (Note 1)
+           scalar  : name of scalar to plot (Note 2)
         
         OUTPUTS:
            h_t     : <matplotlib.pyplot.tripcolor> instance
@@ -75,7 +78,10 @@ class xf_All:
                will be zero, but no maximum value will be specified.
                Furthermore, alternate keys 'xmin', 'xmax', etc. override the
                values specified in 'range'.
-           
+        
+           (2) The 'scalar' keyword may be any state that's in the cell interior
+               list of states.  If the equation set is Navier-Stokes, the
+               options Mach number, entropy, and pressure are also available.
         """
         # Versions:
         #  2013-09-29 @dalle   : First version
@@ -109,9 +115,43 @@ class xf_All:
         # Get the data and triangulation.
         X, u, T = px.InterpVector(self._ptr, UG._ptr, xlim)
         
+        # Pull the first vector.
+        U = UG.Vector[0]
+        # Check if the state is available.
+        if scalar in U.StateName:
+            # Extract the state directly.
+            M = u[:,U.StateName.index(state)]
+        elif scalar is None:
+            # Default: plot the first state.
+            M = u[:,0]
+        elif U.StateName == ['Density', 'XMomentum', 'YMomentum', 'Energy']:
+            # Navier-Stokes equation set
+            gam = 1.4
+            gmi = gam-1
+            # Flow speed
+            q = np.sqrt(u[:,1]**2 + u[:,2]**2) / u[:,0]
+            # Pressure
+            p = gmi * (u[:,-1] -0.4*q*q*u[:,0])
+            # Check for scalar name
+            if scalar.lower() == "mach":
+                # Sound speed
+                c = np.sqrt(gam * p / u[:,0])
+                # Mach number
+                M = q / c
+            elif scalar.lower() == "entropy":
+                # Entropy
+                M = r/gmi * (np.log(p) - gam*np.log(u[:,0]))
+            elif scalar.lower() == "pressure":
+                M = p
+            else:
+                raise RuntimeError((
+                    "Unrecognized Navier-Stokes scalar name '%s'" % scalar))
+        else:
+            raise NotImplementedError("Equation set not implemented.")
+        
         # Draw the plot
         # Using density for now.
-        h_t = plt.tripcolor(X[:,0], X[:,1], T, u[:,0], shading='gouraud')
+        h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
         
         # return the handle
         return h_t
