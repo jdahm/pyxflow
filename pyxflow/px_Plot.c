@@ -9,7 +9,6 @@
 #include <xf_Basis.h>
 
 
-#define TRINODE 3
 
 // Function to evaluate one GenArray on a basis.
 PyObject*
@@ -22,25 +21,41 @@ px_InterpVector(PyObject *self, PyObject *args)
 	xf_GenArray *G;
 	xf_BasisData *PhiQ, *PhiU;
 	PyObject *PyX, *PyU, *PyT, *PyXLim;
+	// Output point and vector arrays
 	real **X=NULL, **u=NULL;
+	// Coordinates, either reference or global
 	real *xn, *xyN, *xyG;
+	// Full state values on individual elements
 	real *EU, *u0;
+	// Plot window coordinates
 	real *xmin, *xmax, *xmin_i, *xmax_i;
+	// Sizes for NumPy arrays
 	npy_intp dims[2];
-	enum xfe_BasisType QBasis, UBasis, pUBasis, LagBasis;
+	// Bases for grid and elements
+	enum xfe_BasisType QBasis, UBasis, pUBasis;
+	// Flag for elements in the plot window
 	enum xfe_Bool qLim;
+	// Shape type for grid elements
 	enum xfe_ShapeType QShape;
+	// Output triangulation
 	int **T;
+	// Single-element subtriangulation
 	int *T0;
-	int ierr, k, i, d, egrp, nEGrp, elem, nElem;
+	// General indices and limits
+	int ierr, k, i, d, dim, sr;
+	// Grid indices and limits
+	int egrp, nEGrp, elem, nElem;
+	// Orders for grid elements, vector elements, and plot elements
 	int QOrder, UOrder, POrder, pPOrder;
+	// Total/cumulative number of points/triangles
 	int nx, nT, ix, iT;
+	// Current element node numbers
 	int *igN;
-	int nn, nnq, nnu, nnp, nq, nt, dim, sr, nnmax, nnpmax;
-	int nnode, nsplit, nbound;
+	// Individual element node counters
+	int nn, nnq, nnu, nnp, nq, nt, nnmax, nnpmax;
 	
 	// Parse the inputs.
-	if (!PyArg_ParseTuple(args, "nnO", &All, &UG, &PyXLim))
+	if (!PyArg_ParseTuple(args, "nn", &All, &UG))
 		return NULL;
 	// Get the element-interior state.
 	ierr = xf_Error(xf_GetVectorFromGroup(UG, xfe_VectorRoleElemState, &U));
@@ -54,39 +69,9 @@ px_InterpVector(PyObject *self, PyObject *args)
 	// That must equal number of arrays in vector
 	if (nEGrp != U->nArray) {
 		ierr = xf_Error(xf_INCOMPATIBLE);
+		PyErr_SetString(PyExc_RuntimeError, 
+			"Array and element groups incompatible.");
 		return NULL;
-	}
-	// Check for variable orders.
-	if (U->vOrder != NULL) {
-		ierr = xf_Error(xf_NOT_SUPPORTED);
-		PyErr_SetString(PyExc_RuntimeError, "Variable orders not supported.");
-		return NULL;
-	}
-	
-	// Check the [xmin, xmax, ymin, ymax(, zmin, zmax)] list.
-	if (!PyList_Check(PyXLim)) {
-		PyErr_SetString(PyExc_TypeError, "Input limits must be a list");
-		return NULL;
-	}
-	// Check the dimension.
-	if ((int) PyList_Size(PyXLim) != 2*dim) {
-		PyErr_SetString(PyExc_RuntimeError, "Limits must have 2*dim entries");
-		return NULL;
-	}
-	// Allocate vectors for window min and max coordinates.
-	ierr = xf_Error(xf_Alloc((void **) &xmin, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	ierr = xf_Error(xf_Alloc((void **) &xmax, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate vectors for min and max coordinates of each element.
-	ierr = xf_Error(xf_Alloc((void **) &xmin_i, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	ierr = xf_Error(xf_Alloc((void **) &xmax_i, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Loop through dimensions to set window bounds.
-	for (d=0; d<dim; d++) {
-		xmin[d] = (real) PyFloat_AsDouble(PyList_GetItem(PyXLim, 2*d));
-		xmax[d] = (real) PyFloat_AsDouble(PyList_GetItem(PyXLim, 2*d+1));
 	}
 	
 	// Initialize counts
@@ -149,7 +134,7 @@ px_InterpVector(PyObject *self, PyObject *args)
 	ierr = xf_Error(xf_Alloc2((void ***) &u, nx, sr, sizeof(real)));
 	if (ierr != xf_OK) return NULL;
 	// Allocate triangles
-	ierr = xf_Error(xf_Alloc2((void ***) &T, nT, TRINODE, sizeof(int)));
+	ierr = xf_Error(xf_Alloc2((void ***) &T, nT, dim+1, sizeof(int)));
 	if (ierr != xf_OK) return NULL;
 	// Allocate coordinates.
 	ierr = xf_Error(xf_Alloc((void **) &xyN, nnmax*dim, sizeof(real)));
@@ -230,31 +215,14 @@ px_InterpVector(PyObject *self, PyObject *args)
 			
 			// Geometry nodes
 			igN = EG.Node[elem];
-			// Reset element min/max coordinates.
-			for (d=0; d<dim; d++) {
-				xmin_i[d] = xmax[d]+1.0;
-				xmax_i[d] = xmin[d]-1.0;
-			}
 			// Loop through nodes.
 			for (i=0; i<nnq; i++) {	
 				// Loop through dimensions.
 				for (d=0; d<dim; d++) {
-					// Pull of node coordinates.
+					// Pull off node coordinates.
 					xyN[i*dim+d] = All->Mesh->Coord[igN[i]][d];
-					// Update element min/max coords
-					xmin_i[d] = min(xyN[i*dim+d], xmin_i[d]);
-					xmax_i[d] = max(xyN[i*dim+d], xmax_i[d]);
 				}
 			}
-			// Check if the element has a vertex in the range.
-			qLim = xfe_True;
-			for (d=0; d<dim; d++) {
-				qLim = qLim && xmax_i[d]>=xmin[d];
-				qLim = qLim && xmin_i[d]<=xmax[d];
-			}
-			// If not in the window, skip the element.
-			if (!qLim) continue;
-			
 			
 			// Calculate global coordinates of subdivision nodes.
 			xf_MxM_Set(PhiQ->Phi, xyN, nnp, nnq, dim, xyG);
@@ -275,8 +243,8 @@ px_InterpVector(PyObject *self, PyObject *args)
 			
 			// Loop through the triangles.
 			for (i=0; i<nt; i++) {
-				for (k=0; k<TRINODE; k++) {
-					T[iT+i][k] = T0[i*TRINODE+k]+ix;
+				for (k=0; k<dim+1; k++) {
+					T[iT+i][k] = T0[i*(dim+1)+k]+ix;
 				}
 			}
 			
@@ -303,13 +271,16 @@ px_InterpVector(PyObject *self, PyObject *args)
 	// Number of triangles
 	dims[0] = iT;
 	// Number of nodes per shape
-	dims[1] = TRINODE;
+	dims[1] = dim+1;
 	// Build the triangulation.
 	PyT = PyArray_SimpleNewFromData(2, dims, NPY_INT, *T);
 	
 	// Output
 	return Py_BuildValue("OOO", PyX, PyU, PyT);
 }
+
+
+
 
 
 // Function to wrap xf_GetRefineCoords

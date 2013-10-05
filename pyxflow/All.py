@@ -114,7 +114,7 @@ class xf_All:
         # Limits on plot window
         xlim = [xmin, xmax, ymin, ymax]
         # Get the data and triangulation.
-        X, u, T = px.InterpVector(self._ptr, UG._ptr, xlim)
+        X, u, T = px.InterpVector(self._ptr, UG._ptr)
         
         # Pull the first vector.
         U = UG.Vector[0]
@@ -150,8 +150,16 @@ class xf_All:
         else:
             raise NotImplementedError("Equation set not implemented.")
         
+        # Triangles to be plotted.
+        TM = T
+        # Check limits
+        TM = TM[X[TM,0].min(axis=1) <= xmax]
+        TM = TM[X[TM,0].max(axis=1) >= xmin]
+        TM = TM[X[TM,1].min(axis=1) <= ymax]
+        TM = TM[X[TM,1].max(axis=1) >= ymin]
+        
         # Draw the requested scalar.
-        h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
+        h_t = plt.tripcolor(X[:,0], X[:,1], TM, M, shading='gouraud')
         # Check for a grid.
         if mesh is True:
             EG = self.Mesh.ElemGroup[0]
