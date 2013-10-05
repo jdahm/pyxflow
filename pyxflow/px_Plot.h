@@ -23,6 +23,25 @@ OUTPUTS:
 */
 
 
+PyObject *
+px_GetRefineCoords(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Wrapper for xf_GetRefineCoords
+
+CALL:
+  coord, vsplit, vbound =  px.GetRefineCoords(Shape, p)
+
+INPUTS:
+  Shape : shape reference integer
+  p     : order
+
+OUTPUTS:
+  coord  : 2D array of reference coordinates
+  vsplit : nodes of vertices of tris/tets
+  vbound : indices of boundary nodes
+*/
+
 
 
 

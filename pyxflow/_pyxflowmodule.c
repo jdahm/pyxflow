@@ -74,6 +74,8 @@ static PyMethodDef Methods[] = {
 	// Plotting methods
 	{"InterpVector", px_InterpVector, METH_VARARGS,
 		"Creates network of triangles and values for plotting"},
+	{"GetRefineCoords", px_GetRefineCoords, METH_VARARGS,
+		"Wrapper for xf_GetRefineCoords"},
 	{NULL, NULL, 0, NULL}
 };
 

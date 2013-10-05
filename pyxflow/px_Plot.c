@@ -29,6 +29,7 @@ px_InterpVector(PyObject *self, PyObject *args)
 	npy_intp dims[2];
 	enum xfe_BasisType QBasis, UBasis, pUBasis, LagBasis;
 	enum xfe_Bool qLim;
+	enum xfe_ShapeType QShape;
 	int **T;
 	int *T0;
 	int ierr, k, i, d, egrp, nEGrp, elem, nElem;
@@ -36,6 +37,7 @@ px_InterpVector(PyObject *self, PyObject *args)
 	int nx, nT, ix, iT;
 	int *igN;
 	int nn, nnq, nnu, nnp, nq, nt, dim, sr, nnmax, nnpmax;
+	int nnode, nsplit, nbound;
 	
 	// Parse the inputs.
 	if (!PyArg_ParseTuple(args, "nnO", &All, &UG, &PyXLim))
@@ -113,16 +115,20 @@ px_InterpVector(PyObject *self, PyObject *args)
 				pPOrder = POrder;
 				pUBasis = UBasis;
 				
-				// Determine nn = # unknowns for elements in this group
-				ierr = xf_Error(xf_Order2nNode(UBasis, POrder, &nn));
+				// Get the shape type (tris or tets, but just to be safe).
+				ierr = xf_Error(xf_Basis2Shape(QBasis, &QShape));
+				if (ierr != xf_OK) return NULL;
+	
+				// Set pointers.
+				xn = NULL;
+				T0 = NULL;
+				// Get the element subdivision.
+				ierr = xf_Error(xf_GetRefineCoords(QShape, POrder, &nnp, &xn,
+					&nt, &T0, NULL, NULL));
 				if (ierr != xf_OK) return NULL;
 
 				// Determine nn = # unknowns for elements in this group
-				ierr = xf_Error(xf_Order2nNode(QBasis, POrder, &nnp));
-				if (ierr != xf_OK) return NULL;
-				
-				// Determine number of triangles in element.
-				ierr = xf_Error(px_Basis2Tri(UBasis, POrder, &nt, NULL));
+				ierr = xf_Error(xf_Order2nNode(UBasis, POrder, &nn));
 				if (ierr != xf_OK) return NULL;
 			}
 			// Add to the number of elements.
@@ -199,17 +205,16 @@ px_InterpVector(PyObject *self, PyObject *args)
 				ierr = xf_Error(xf_Order2nNode(UBasis, UOrder, &nnu));
 				if (ierr != xf_OK) return NULL;
 				
-				// Determine nn = # unknowns for elements in this group.
-				ierr = xf_Error(xf_Order2nNode(QBasis, POrder, &nnp));
+				// Get the shape type (tris or tets, but just to be safe).
+				ierr = xf_Error(xf_Basis2Shape(QBasis, &QShape));
 				if (ierr != xf_OK) return NULL;
-				
-				/*
-				// Determine Lagrange basis. (not sure if this is right?)
-				ierr = xf_Error(xf_Basis2Lagrange(UBasis, &LagBasis));
-				if (ierr != xf_OK) return NULL;
-				*/
-				// Obtain Lagrange node locations.
-				ierr = xf_Error(xf_LagrangeNodes(QBasis, POrder, NULL, NULL, &xn));
+	
+				// Set pointers.
+				xn = NULL;
+				T0 = NULL;
+				// Get the element subdivision.
+				ierr = xf_Error(xf_GetRefineCoords(QShape, POrder, &nnp, &xn,
+					&nt, &T0, NULL, NULL));
 				if (ierr != xf_OK) return NULL;
 				
 				// Compute basis functions at Lagrange nodes.
@@ -220,10 +225,6 @@ px_InterpVector(PyObject *self, PyObject *args)
 				// Compute basis functions at Lagrange nodes.
 				ierr = xf_Error(xf_EvalBasis(QBasis, QOrder, xfe_False, nnp, xn,
 					xfb_Phi, &PhiQ));
-				if (ierr != xf_OK) return NULL;
-				
-				// Determine number of triangles in element.
-				ierr = xf_Error(px_Basis2Tri(UBasis, POrder, &nt, &T0));
 				if (ierr != xf_OK) return NULL;
 			}
 			
@@ -311,146 +312,56 @@ px_InterpVector(PyObject *self, PyObject *args)
 }
 
 
-// Function to get triangulation for an element
-/*
-PURPOSE:
-  Get triangulation for one element and save it to a matrix if given.
-  
-CALL:
-  ierr = px_Basis2Tri(UBasis, POrder, &nt, &T)
-
-INPUTS:
-  UBasis : xfe_BasisType
-  POrder : interpolation order or number of 1D subdivisions of element
-
-OUTPUTS:
-  nt : number of triangles
-  T  : (optional) [nT x 3] matrix with `nt` more rows assigned
-*/
-int
-px_Basis2Tri(enum xfe_BasisType UBasis, int POrder, int *pnt, int **pT)
+// Function to wrap xf_GetRefineCoords
+PyObject *
+px_GetRefineCoords(PyObject *self, PyObject *args)
 {
-	int ierr, nt, i, j, k, ii;
-	int **kk;
-	int *T;
-	int n = POrder;
-	int nn;
+	enum xfe_ShapeType Shape;
+	int ierr, p, dim;
+	int nnode, nsplit, nbound;
+	int *vsplit, *vbound;
+	real *coord;
+	npy_intp dims[2];
+	PyObject *X, *py_vsplit, *py_vbound;
 	
-	// Determine number of triangles in element.
-	switch (UBasis) {
-	case xfe_TriLagrange:
-	case xfe_TriHierarch:
-		// Number of triangles
-		nt = (n*(n+1) + n*(n-1))/2;
-		// Number of nodes
-		nn = (n+1)*(n+2)/2;
-		break;
-	case xfe_QuadLagrange:
-		// Number of triangles
-		nt = 2*n*n;
-		// Number of nodes
-		nn = (n+1)*(n+1);
-		break;
-	default:
-		ierr = xf_Error(xf_NOT_SUPPORTED);
-		return ierr;
-		break;
-	}
+	// Process arguments.
+	if (!PyArg_ParseTuple(args, "ii", &Shape, &p))
+		return NULL;
 	
-	// Assign the number of triangles to output.
-	(*pnt) = nt;
+	// Number of dimensions
+	ierr = xf_Error(xf_Shape2Dim(Shape, &dim));
+	if (ierr != xf_OK) return NULL;
 	
-	// Check for triangles.
-	if (pT == NULL) return xf_OK;
-	// Allocate the triangles.
-	ierr = xf_Error(xf_ReAlloc((void **) pT, 3*nt, sizeof(real)));
-	if (ierr != xf_OK) return ierr;
-	// Assign the pointer.
-	T = (*pT);
+	// Initialize pointers.
+	coord = NULL;
+	vsplit = NULL;
+	vbound = NULL;
+	// Wrap xf_GetRefineCoords.
+	ierr = xf_Error(xf_GetRefineCoords(Shape, p, &nnode,
+		&coord, &nsplit, &vsplit, &nbound, &vbound));
+	if (ierr != xf_OK) return NULL;
 	
-	// Allocate counters.
-	ierr = xf_Error(xf_Alloc2((void ***) &kk, nn, nn, sizeof(int)));
-	if (ierr != xf_OK) return ierr;
+	// Create NumPy arrays.
+	// Number of points
+	dims[0] = nnode;
+	dims[1] = dim;
+	// Create coordinate vector
+	X = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, coord);
 	
-	// Determine the network of triangles.
-	switch (UBasis) {
-	case xfe_TriLagrange:
-	case xfe_TriHierarch:
-		// Triangle count
-		k = 0;
-		// Loop through rows of triangles.
-		for (i=0; i<n+1; i++) {
-			// Loop through "columns" of triangles.
-			for (j=0; j<n-i+2; j++) {
-				// Vertex
-				kk[i][j] = k;
-				// Triangle count
-				k++;
-			} // j
-		} // i
-		
-		// Triangle count
-		k = 0;
-		// Loop through rows of triangles.
-		for (i=0; i<n; i++) {
-			// Loop through "columns" of triangles.
-			for (j=0; j<n-i+1; j++) {
-				// Save the node indices.
-				T[3*k+0] = kk[i][j];
-				T[3*k+1] = kk[i+1][j];
-				T[3*k+2] = kk[i][j+1];
-				// Triangle count
-				k++;
-			} // j
-		} // i
-		// Loop through the remaining triangles.
-		for (i=0; i<n-1; i++) {
-			// Loop through the "columns".
-			for (j=0; j<n-i; j++) {
-				// Save the node indices.
-				T[3*k+0] = kk[i][j+1];
-				T[3*k+1] = kk[i+1][j];
-				T[3*k+2] = kk[i+1][j+1];
-				// Triangle count
-				k++;
-			} // j
-		} // i
-		
-		break;
-	case xfe_QuadLagrange:
-		// Triangle count
-		k = 0;
-		// Loop through "columns" of triangles.
-		for (j=0; j<n; j++) {
-			// Loop through "rows" of triangles.
-			for (i=0; i<n; i++) {
-				// Lower left corner
-				ii = j*(n+1) + i;
-				// Save the vertices for the first triangle.
-				T[3*k+0] = ii;
-				T[3*k+1] = ii+1;
-				T[3*k+2] = ii+n+1;
-				// Increase triangle count.
-				k++;
-				// Save the vertices for the second triangle.
-				T[3*k+0] = ii+1;
-				T[3*k+1] = ii+n+2;
-				T[3*k+2] = ii+n+1;
-				// Increase triangle count,
-				k++;
-			} // i
-		} // j
-		
-		break;
-	default:
-		ierr = xf_Error(xf_NOT_SUPPORTED);
-		return ierr;
-		break;
-	}
+	// Number of subelements
+	dims[0] = nsplit;
+	dims[1] = dim+1;
+	// Create subelement vector
+	py_vsplit = PyArray_SimpleNewFromData(2, dims, NPY_INT, vsplit);
 	
-	// Check for consistency.
-	if (k != nt) return xf_INCOMPATIBLE;
+	// Number of subelement boundary edges/faces
+	dims[0] = nbound;
+	// Create subelement boundary vector
+	py_vbound = PyArray_SimpleNewFromData(1, dims, NPY_INT, vbound);
 	
-	return xf_OK;
+	// Output
+	return Py_BuildValue("OOO", X, py_vsplit, py_vbound);
 }
+
+
 
