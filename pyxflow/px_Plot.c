@@ -295,8 +295,8 @@ px_MeshLines(PyObject *self, PyObject *args)
 	real *xn, *xyN, *xyG;
 	// Sizes for NumPy arrays
 	npy_intp dims[2];
-	// Bases for grid and elements
-	enum xfe_BasisType QBasis, UBasis, pUBasis;
+	// Basis for grid
+	enum xfe_BasisType QBasis;
 	// Shape type for grid elements
 	enum xfe_ShapeType QShape;
 	// Output mesh indices
@@ -306,9 +306,9 @@ px_MeshLines(PyObject *self, PyObject *args)
 	// General indices and limits
 	int ierr, k, i, d, dim;
 	// Grid indices and limits
-	int egrp, nEGrp, elem, nElem;
+	int egrp, nEGrp, elem, nElem, nElemTotal;
 	// Orders for grid elements, vector elements, and plot elements
-	int QOrder, UOrder, POrder, pPOrder;
+	int QOrder, POrder, pPOrder;
 	// Total/cumulative number of points
 	int nx, ix;
 	// Cumulative line count, number of points per line for this order
@@ -330,39 +330,30 @@ px_MeshLines(PyObject *self, PyObject *args)
 	nEGrp = All->Mesh->nElemGroup;
 	// Dimension
 	dim = All->Mesh->Dim;
-	// That must equal number of arrays in vector
-	if (nEGrp != U->nArray) {
-		ierr = xf_Error(xf_INCOMPATIBLE);
-		PyErr_SetString(PyExc_RuntimeError, 
-			"Array and element groups incompatible.");
-		return NULL;
-	}
 	
 	// Initialize counts
 	nx = 0; nnmax = 0; nnpmax = 0;
-	nT = 0;
+	nT = 0; nElemTotal = 0;
 	// Get the total number of triangles and points.
 	for (egrp=0; egrp<nEGrp; egrp++) {
 		// Geometry order and basis
 		QOrder = All->Mesh->ElemGroup[egrp].QOrder;
 		QBasis = All->Mesh->ElemGroup[egrp].QBasis;
-		// Previous order and basis
+		// Use the order.
+		POrder = QOrder;
+		// Previous order
 		pPOrder = -1;
-		pUBasis = -1;
 		// Number of elements in group
 		nElem = All->Mesh->ElemGroup[egrp].nElem;
+		// Add to total number of elements.
+		nElemTotal += nElem;
 		
 		// Loop through elements
 		for (elem=0; elem<nElem; elem++) {
-			// Get interpolation order and basis.
-			xf_InterpOrderBasis(U, egrp, elem, &UOrder, &UBasis);
-			// Order to be used.
-			POrder = max(QOrder, UOrder);
 			// Redetermine count if necessary.
-			if ((POrder != pPOrder) || (UBasis != pUBasis)) {
+			if ((POrder != pPOrder) {
 				// Remember the most recent values.
 				pPOrder = POrder;
-				pUBasis = UBasis;
 				
 				// Get the shape type (tris or tets, but just to be safe).
 				ierr = xf_Error(xf_Basis2Shape(QBasis, &QShape));
@@ -374,20 +365,13 @@ px_MeshLines(PyObject *self, PyObject *args)
 				L0 = NULL;
 				// Get the element subdivision.
 				ierr = xf_Error(xf_GetRefineCoords(QShape, POrder, &nnp, &xn,
-					&nt, &T0, NULL, NULL));
-				if (ierr != xf_OK) return NULL;
-
-				// Determine nn = # unknowns for elements in this group
-				ierr = xf_Error(xf_Order2nNode(UBasis, POrder, &nn));
+					&nt, &T0, &nn, &L0));
 				if (ierr != xf_OK) return NULL;
 			}
 			// Add to the number of elements.
 			nx += nn;
-			// Add to the number of triangles.
-			nT += nt;
 			// Update max number of nodes.
 			nnmax = max(nnmax, nn);
-			nnpmax = max(nnpmax, nnp);
 			
 		} // elem, element index 
 	} // egrp, GenArray (or ElementGroup) index
@@ -395,20 +379,14 @@ px_MeshLines(PyObject *self, PyObject *args)
 	// Allocate coordinates.
 	ierr = xf_Error(xf_Alloc2((void ***) &X, nx, dim, sizeof(real)));
 	if (ierr != xf_OK) return NULL;
-	// Allocate states.
-	ierr = xf_Error(xf_Alloc2((void ***) &u, nx, sr, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate triangles
-	ierr = xf_Error(xf_Alloc2((void ***) &T, nT, dim+1, sizeof(int)));
+	// Allocate mesh paths.
+	ierr = xf_Error(xf_Alloc2((void ***) &L, nElemTotal, nnmax+1, sizeof(int)));
 	if (ierr != xf_OK) return NULL;
 	// Allocate coordinates.
 	ierr = xf_Error(xf_Alloc((void **) &xyN, nnmax*dim, sizeof(real)));
 	if (ierr != xf_OK) return NULL;
 	// Allocate global coordinates at subdivision nodes
-	ierr = xf_Error(xf_Alloc((void **) &xyG, nnpmax*dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate states at subdivision nodes
-	ierr = xf_Error(xf_Alloc((void **) &u0, nnpmax*sr, sizeof(real)));
+	ierr = xf_Error(xf_Alloc((void **) &xyG, nnmax*dim, sizeof(real)));
 	if (ierr != xf_OK) return NULL;
 	
 	// Initialize indices
