@@ -3,23 +3,24 @@
 
 
 PyObject *
-px_InterpVector(PyObject *self, PyObject *args);
+px_PlotData(PyObject *self, PyObject *args);
 /*
 PURPOSE:
-  Interpolate vector of a solution on to system of triangles
+  Calculate interpolated vector and mesh line coordinates
 	
 CALL:
-  x, y, u, T = px.InterpVector(A, VG)
+  X, u, T, L = px.InterpVector(A, UG, xlim)
 	
 INPUTS:
-  A  : pointer to xf_All structure
-  VG : pointer to xf_VectorGroup structure
+  A    : pointer to xf_All structure
+  UG   : pointer to xf_VectorGroup structure
+  xlim : plot window, [xmin, xmax, ymin, ymax(, zmin, zmax)]
 
 OUTPUTS:
-  x : NumPy array of x-coordinates
-  y : NumPy array of y-coordinates
+  X : NumPy array of spatial node coordinates
   u : NumPy array of state values at each node
   T : NumPy array of node indices for network of triangles
+  L : list of arrays of boundary nodes
 */
 
 

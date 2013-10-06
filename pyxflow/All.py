@@ -113,8 +113,8 @@ class xf_All:
         UG = self.DataSet.Data[0].Data
         # Limits on plot window
         xlim = [xmin, xmax, ymin, ymax]
-        # Get the data and triangulation.
-        X, u, T, L = px.InterpVector(self._ptr, UG._ptr)
+        # Get the calculated vector, triangulation, and mesh lines.
+        X, u, T, L = px.PlotData(self._ptr, UG._ptr, xlim)
         # Convert mesh lines to NumPy array.
         L = np.asarray(L)
         
@@ -152,19 +152,12 @@ class xf_All:
         else:
             raise NotImplementedError("Equation set not implemented.")
         
-        # Triangles to be plotted.
-        TM = T
-        # Check limits
-        TM = TM[X[TM,0].min(axis=1) <= xmax]
-        TM = TM[X[TM,0].max(axis=1) >= xmin]
-        TM = TM[X[TM,1].min(axis=1) <= ymax]
-        TM = TM[X[TM,1].max(axis=1) >= ymin]
         # Draw the requested scalar.
-        h_t = plt.tripcolor(X[:,0], X[:,1], TM, M, shading='gouraud')
+        h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
         
         # Check for a grid.
         if mesh is True:
-            h = [plt.plot(X[j,0], X[j,1], 'k-') for j in L]
+            h_l = [plt.plot(X[j,0], X[j,1], 'k-', linewidth=0.2) for j in L]
         
         # return the handle
         return h_t

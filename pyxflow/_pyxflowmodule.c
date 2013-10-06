@@ -72,7 +72,7 @@ static PyMethodDef Methods[] = {
 	{"GetAllMembers", px_GetAllMembers, METH_VARARGS,
 		"Returns a tuple of pointers to the members of the xf_All"},
 	// Plotting methods
-	{"InterpVector", px_InterpVector, METH_VARARGS,
+	{"PlotData", px_PlotData, METH_VARARGS,
 		"Creates network of triangles and values for plotting"},
 	{"GetRefineCoords", px_GetRefineCoords, METH_VARARGS,
 		"Wrapper for xf_GetRefineCoords"},

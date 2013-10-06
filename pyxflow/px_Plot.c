@@ -12,7 +12,7 @@
 
 // Function to evaluate one GenArray on a basis.
 PyObject*
-px_InterpVector(PyObject *self, PyObject *args)
+px_PlotData(PyObject *self, PyObject *args)
 {
 	xf_All *All;
 	xf_ElemGroup EG;
@@ -20,19 +20,26 @@ px_InterpVector(PyObject *self, PyObject *args)
 	xf_Vector *U;
 	xf_GenArray *G;
 	xf_BasisData *PhiQ, *PhiU;
+	// Output objects
 	PyObject *PyX, *PyU, *PyT, *PyL;
+	// Input list for min/max coordinates
+	PyObject *PyXLim;
 	// Output point and vector arrays
 	real **X=NULL, **u=NULL;
 	// Coordinates, either reference or global
 	real *xn, *xyN, *xyG;
 	// Full state values on individual elements
 	real *EU, *u0;
+	// Coordinates for plot window
+	real *xmin, *xmax, *xmin_i, *xmax_i;
 	// Sizes for NumPy arrays
 	npy_intp dims[2];
 	// Bases for grid and elements
 	enum xfe_BasisType QBasis, UBasis, pUBasis;
 	// Shape type for grid elements
 	enum xfe_ShapeType QShape;
+	// Flag for points in the plot window or not.
+	enum xfe_Bool qLim;
 	// Output triangulation and boundary node list
 	int **T, **L;
 	// Single-element subtriangulation and node list
@@ -57,7 +64,7 @@ px_InterpVector(PyObject *self, PyObject *args)
 	int nnq, nnu, nnp, nq, nnqmax, nnpmax;
 	
 	// Parse the inputs.
-	if (!PyArg_ParseTuple(args, "nn", &All, &UG))
+	if (!PyArg_ParseTuple(args, "nnO", &All, &UG, &PyXLim))
 		return NULL;
 	// Get the element-interior state.
 	if (UG != NULL) {
@@ -77,6 +84,32 @@ px_InterpVector(PyObject *self, PyObject *args)
 		PyErr_SetString(PyExc_RuntimeError, 
 			"Array and element groups incompatible.");
 		return NULL;
+	}
+	// Check the [xmin, xmax, ymin, ymax(, zmin, zmax)] list.
+	if (!PyList_Check(PyXLim)) {
+		PyErr_SetString(PyExc_TypeError, "Input limits must be a list");
+		return NULL;
+	}
+	
+	// Check the dimension.
+	if ((int) PyList_Size(PyXLim) != 2*dim) {
+		PyErr_SetString(PyExc_RuntimeError, "Limits must have 2*dim entries");
+		return NULL;
+	}
+	// Allocate vectors for window min and max coordinates.
+	ierr = xf_Error(xf_Alloc((void **) &xmin, dim, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
+	ierr = xf_Error(xf_Alloc((void **) &xmax, dim, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
+	// Allocate vectors for min and max coordinates of each element.
+	ierr = xf_Error(xf_Alloc((void **) &xmin_i, dim, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
+	ierr = xf_Error(xf_Alloc((void **) &xmax_i, dim, sizeof(real)));
+	if (ierr != xf_OK) return NULL;
+	// Loop through dimensions to set window bounds.
+	for (d=0; d<dim; d++) {
+		xmin[d] = (real) PyFloat_AsDouble(PyList_GetItem(PyXLim, 2*d));
+		xmax[d] = (real) PyFloat_AsDouble(PyList_GetItem(PyXLim, 2*d+1));
 	}
 	
 	// Initialize counts
@@ -243,14 +276,30 @@ px_InterpVector(PyObject *self, PyObject *args)
 			
 			// Geometry nodes
 			igN = EG.Node[elem];
+			// Reset element min/max coordinates.
+			for (d=0; d<dim; d++) {
+				xmin_i[d] = xmax[d]+1.0;
+				xmax_i[d] = xmin[d]-1.0;
+			}
 			// Loop through nodes.
 			for (i=0; i<nnq; i++) {	
 				// Loop through dimensions.
 				for (d=0; d<dim; d++) {
 					// Pull off node coordinates.
 					xyN[i*dim+d] = All->Mesh->Coord[igN[i]][d];
-				}
+					// Update element min/max coords
+					xmin_i[d] = min(xyN[i*dim+d], xmin_i[d]);
+					xmax_i[d] = max(xyN[i*dim+d], xmax_i[d]);
+				} // d
+			} // i
+			// Check if the element has a vertex in the range.
+			qLim = xfe_True;
+			for (d=0; d<dim; d++) {
+				qLim = qLim && xmax_i[d]>=xmin[d];
+				qLim = qLim && xmin_i[d]<=xmax[d];
 			}
+			// If not in the window, skip the element.
+			if (!qLim) continue;
 			
 			// Calculate global coordinates of subdivision nodes.
 			xf_MxM_Set(PhiQ->Phi, xyN, nnp, nnq, dim, xyG);
@@ -279,7 +328,7 @@ px_InterpVector(PyObject *self, PyObject *args)
 			// Loop through boundary lines.
 			for (i=0; i<nf; i++) {
 				// Save the number of nodes in this path.
-				mb[iL+i] = nb;
+				mb[iL+i] = nb+1;
 				// Loop through nodes.
 				for (k=0; k<nb; k++) {
 					// Save the node indices.
