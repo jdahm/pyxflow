@@ -114,7 +114,9 @@ class xf_All:
         # Limits on plot window
         xlim = [xmin, xmax, ymin, ymax]
         # Get the data and triangulation.
-        X, u, T = px.InterpVector(self._ptr, UG._ptr)
+        X, u, T, L = px.InterpVector(self._ptr, UG._ptr)
+        # Convert mesh lines to NumPy array.
+        L = np.asarray(L)
         
         # Pull the first vector.
         U = UG.Vector[0]
@@ -157,15 +159,12 @@ class xf_All:
         TM = TM[X[TM,0].max(axis=1) >= xmin]
         TM = TM[X[TM,1].min(axis=1) <= ymax]
         TM = TM[X[TM,1].max(axis=1) >= ymin]
-        
         # Draw the requested scalar.
         h_t = plt.tripcolor(X[:,0], X[:,1], TM, M, shading='gouraud')
+        
         # Check for a grid.
         if mesh is True:
-            EG = self.Mesh.ElemGroup[0]
-            j_p = EG.Node[:, [0,3,15,12,0]]
-            X_p = self.Mesh.Coord
-            h = [plt.plot(X_p[j,0], X_p[j,1], 'k-') for j in j_p]
+            h = [plt.plot(X[j,0], X[j,1], 'k-') for j in L]
         
         # return the handle
         return h_t
