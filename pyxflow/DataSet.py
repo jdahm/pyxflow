@@ -187,6 +187,88 @@ class xf_Vector:
         # Get the GenArrays
         #self.GenArray = GA
         self.GenArray = [xf_GenArray(G) for G in GA]
+        
+        
+    # Scalar calculation function
+    def get_scalar(self, u, scalar=None):
+        """
+        M = V.get_scalar(u, scalar=None)
+        
+        INPUTS:
+           u      : array of state values
+           scalar : name of scalar to calculate (Note 1)
+        
+        OUTPUTS:
+           M      : array of scalar values
+        
+        This function calculates a scalar based on the available states.  The
+        dimensions of `u` must match the 'StateRank' for the input Vector `V`.
+        
+        NOTES:
+           (1) Additional scalar names available for Navier-Stokes equation sets
+               include 'Mach', 'Pressure', and 'Entropy'.
+        
+        """
+        # Versions:
+        #  2013-10-06 @dalle   : First version
+        
+        # Check if the state is available.
+        if scalar in self.StateName:
+            # Extract the state directly.
+            M = u[:,self.StateName.index(scalar)]
+        elif scalar is None:
+            # Default: plot the first state.
+            M = u[:,0]
+        elif self.StateName == ['Density','XMomentum','YMomentum','Energy']:
+            # Navier-Stokes equation set
+            gam = 1.4
+            gmi = gam-1
+            # Flow speed
+            q = np.sqrt(u[:,1]**2 + u[:,2]**2) / u[:,0]
+            # Pressure
+            p = gmi * (u[:,-1] -0.4*q*q*u[:,0])
+            # Check for scalar name
+            if scalar.lower() == "mach":
+                # Sound speed
+                c = np.sqrt(gam * p / u[:,0])
+                # Mach number
+                M = q / c
+            elif scalar.lower() == "entropy":
+                # Entropy
+                M = r/gmi * (np.log(p) - gam*np.log(u[:,0]))
+            elif scalar.lower() == "pressure":
+                M = p
+            else:
+                raise RuntimeError((
+                    "Unrecognized Navier-Stokes scalar name '%s'" % scalar))
+        elif self.StateName == [
+                'Density','XMomentum','YMomentum','ZMomentum','Energy']:
+            # Navier-Stokes equation set
+            gam = 1.4
+            gmi = gam-1
+            # Flow speed
+            q = np.sqrt(u[:,1]**2 + u[:,2]**2 + u[:,3]**2) / u[:,0]
+            # Pressure
+            p = gmi * (u[:,-1] -0.4*q*q*u[:,0])
+            # Check for scalar name
+            if scalar.lower() == "mach":
+                # Sound speed
+                c = np.sqrt(gam * p / u[:,0])
+                # Mach number
+                M = q / c
+            elif scalar.lower() == "entropy":
+                # Entropy
+                M = r/gmi * (np.log(p) - gam*np.log(u[:,0]))
+            elif scalar.lower() == "pressure":
+                M = p
+            else:
+                raise RuntimeError((
+                    "Unrecognized Navier-Stokes scalar name '%s'" % scalar))
+        else:
+            raise NotImplementedError("Equation set not implemented.")
+            
+        # Output
+        return M
 
 
 # ---- Class for xf_GenArray ----

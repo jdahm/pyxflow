@@ -120,37 +120,8 @@ class xf_All:
         
         # Pull the first vector.
         U = UG.Vector[0]
-        # Check if the state is available.
-        if scalar in U.StateName:
-            # Extract the state directly.
-            M = u[:,U.StateName.index(state)]
-        elif scalar is None:
-            # Default: plot the first state.
-            M = u[:,0]
-        elif U.StateName == ['Density', 'XMomentum', 'YMomentum', 'Energy']:
-            # Navier-Stokes equation set
-            gam = 1.4
-            gmi = gam-1
-            # Flow speed
-            q = np.sqrt(u[:,1]**2 + u[:,2]**2) / u[:,0]
-            # Pressure
-            p = gmi * (u[:,-1] -0.4*q*q*u[:,0])
-            # Check for scalar name
-            if scalar.lower() == "mach":
-                # Sound speed
-                c = np.sqrt(gam * p / u[:,0])
-                # Mach number
-                M = q / c
-            elif scalar.lower() == "entropy":
-                # Entropy
-                M = r/gmi * (np.log(p) - gam*np.log(u[:,0]))
-            elif scalar.lower() == "pressure":
-                M = p
-            else:
-                raise RuntimeError((
-                    "Unrecognized Navier-Stokes scalar name '%s'" % scalar))
-        else:
-            raise NotImplementedError("Equation set not implemented.")
+        # Get the scalar.
+        M = U.get_scalar(u, scalar)
         
         # Draw the requested scalar.
         h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
@@ -162,6 +133,7 @@ class xf_All:
         # return the handle
         return h_t
         
-        
+
+
         
 
