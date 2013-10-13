@@ -9,6 +9,9 @@
 import matplotlib.pyplot as plt
 # Numeric functions
 import numpy as np
+# Line collection
+from matplotlib.collections import LineCollection
+
 # The background pyxflow workhorse module
 import _pyxflow as px
 # Mesh
@@ -128,7 +131,12 @@ class xf_All:
         
         # Check for a grid.
         if mesh is True:
-            h_l = [plt.plot(X[j,0], X[j,1], 'k-', linewidth=0.2) for j in L]
+            # Nx2 matrix of xy-coordinates for each element
+            xx = (X[j,:] for j in L)
+            # Make a collection of lines with the same properties.
+            h_l = LineCollection(xx, linewidths=0.2, colors=(0,0,0,1))
+            # Have to plot these manually
+            plt.gca().add_collection(h_l)
         
         # return the handle
         return h_t
