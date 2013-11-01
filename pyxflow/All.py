@@ -54,14 +54,15 @@ class xf_All:
     def __del__(self):
         px.DestroyAll(self._ptr)
         
-    def Plot(self, xyrange=None, scalar=None, mesh=False,
+    def Plot(self, xyrange=None, vgroup='State', scalar=None, mesh=False,
         xmin=None, xmax=None, ymin=None, ymax=None):
         """
         All = xf_All(...)
-        h_t = All.Plot(xyrange=None, scalar=None, mesh=False)
+        h_t = All.Plot(xyrange=None, vgroup='State', scalar=None, mesh=False)
         
         INPUTS:
            xyrange : list of coordinates to plot (Note 1)
+           vgroup  : title of vector group to use
            scalar  : name of scalar to plot (Note 2)
            mesh    : flag to draw a mesh
         
@@ -112,8 +113,21 @@ class xf_All:
         if xmax is None: xmax = self.Mesh.Coord[:,0].max()
         if ymin is None: ymin = self.Mesh.Coord[:,1].min()
         if ymax is None: ymax = self.Mesh.Coord[:,1].max()
-        # Get the vector group.
-        UG = self.DataSet.Data[0].Data
+        
+        # Get the titles of the vector groups available.
+        UG_Titles = [D.Title for D in self.DataSet.Data]
+        # Check for the requested vector group.
+        if vgroup in UG_Titles:
+            # Get the matching vector group.
+            UG = self.DataSet.Data[UG_Titles.index(vgroup)].Data
+        elif vgroup is None:
+            # Get the first vector group.
+            UG = self.DataSet.Data[0].Data
+        else:
+            # Error
+            raise RuntimeError((
+                "Unrecognized DataSet title '%s'" % vgroup))
+        
         # Limits on plot window
         xlim = [xmin, xmax, ymin, ymax]
         # Get the calculated vector, triangulation, and mesh lines.
