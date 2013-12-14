@@ -4,11 +4,12 @@
 # Packagess
 from distutils.core import setup, Extension
 import ConfigParser
+import json
 
 # Get a get/set type object.
 config = ConfigParser.SafeConfigParser()
 # Read the configuration options.
-config.read("../config.cfg")
+config.read("../PX_CONFIG")
 
 # The most important parameter: path to XFlow
 xflow_home = config.get("xflow", "home")
@@ -16,7 +17,8 @@ xflow_home = config.get("xflow", "home")
 # This is static.
 eqnset = config.get("xflow", "eqnset")
 # Additional libraries
-extra_libs = config.get("xflow", "libs")
+libstrs = config.get("xflow", "libs")
+extra_libs = [str(x) for x in json.loads(libstrs)]
 # Add the appropriate XFlow library to the list.
 libs = ["xfSerial", eqnset] + extra_libs
 

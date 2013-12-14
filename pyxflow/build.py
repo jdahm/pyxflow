@@ -5,7 +5,7 @@ import ConfigParser
 import shutil
 
 config = ConfigParser.SafeConfigParser()
-config.read("../config.cfg")
+config.read("../PX_CONFIG")
 
 pythonexec = config.get("python", "exec")
 
