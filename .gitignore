@@ -3,6 +3,8 @@
 *.swp
 
 build/
+PX_CONFIG
+configure.log
 
 *.so
 *.o

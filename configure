@@ -1,0 +1,230 @@
+#!/bin/bash -f
+
+# This script writes a configuration file for use in compilation of pyXFlow.
+# The script attempts, as best it can, to write a machine-specific
+# configuration file.  However, the resulting 'PX_CONFIG' file can be edited
+# as necessary for non-standard machines.
+#
+# For the most part, success will depend on the availability of the necessary
+# Python libraries and utilities.  In addition, a compiled and working XFlow
+# library must also be available.
+
+# Versions:
+#  2013-12-13 @dalle   : Derived from XFlow configure script
+
+
+# Configuration file
+outfile="PX_CONFIG"
+
+# Script log file
+logfile="configure.log"
+
+# Script name
+scriptname="$0"
+
+# Operating system
+os=$(uname)
+
+# Functions
+# Print to screen, and append message to the logfile.
+echo_t() { echo "$@" | tee -a $logfile; }
+
+# Print help information
+usage() {
+    echo_t " pyXFlow configuration script."
+    echo_t "  "
+    echo_t " USAGE: $0 [options]"
+    echo_t "  "
+    echo_t " Available options:"
+    echo_t "    (list of possible options between '|', with default"
+    echo_t "    option in {} characters)"
+    echo_t "  "
+    echo_t "  -xflow [ {$HOME/xflow} | path/to/xflow ]"
+    echo_t "       Path to base folder (that contains lib/ and bin/)"
+    echo_t "  "
+    echo_t "  -python [ python | {python2} | python3 ]"
+    echo_t "       Python executable name"
+    echo_t "  "
+    echo_t "  -version [ {2.7} | 2.6 | version-number ]"
+    echo_t "       Python version to use"
+    echo_t "  "
+    echo_t "  -arch [ {linux-x86_64} | linux-i686 ]"
+    echo_t "       Architecture, according to python."
+    echo_t "       It should be possible to make this auto-detected"
+    echo_t "  "
+    echo_t "  -eqnset [ {CompressibleNS} | Scalar | Acoustics ]"
+    echo_t "       Name of XFlow library to link"
+    echo_t "  "
+    echo_t "  -nolapack"
+    echo_t "       Disable LAPACK"
+    echo_t "  "
+    echo_t "  -noblas"
+    echo_t "       Disable BLAS"
+    echo_t "  "
+    echo_t "  -help | -h"
+    echo_t "       Display this guide and exit"
+    echo_t "  "
+    echo_t "  "
+    echo_t " Examples:"
+    echo_t "  "
+    echo_t "  The most basic call will use all the defaults."
+    echo_t "     \$ ./configure"
+    echo_t "  "
+    echo_t "  The following disables BLAS and LAPACK and uses a different"
+    echo_t "  location for the XFlow folders."
+    echo_t "     \$ ./configure -noblas -nolapack -xflow ~/usr/local/xflow"
+    echo_t "  "
+    echo_t "  On 32-bit systems, it will be necessary to use the following."
+    echo_t "     \$ ./configure -arch linux-i686"
+    echo_t "  "
+}
+
+exit_ok() { exit 0; }
+exit_fail() { exit 1; }
+
+newline() { echo_t "  "; }
+
+unknown_option() {
+    echo_t "  Unknown input option!"
+    echo_t "  See $scriptname -help for valid options"
+    exit_fail
+}
+
+# Set default options.
+xflow_home="$HOME/xflow"
+python_exec="python2"
+python_ver="2.7"
+sys_arch="linux-x86_64"
+eqnset="CompressibleNS"
+flapack="true"
+fblas="true"
+
+# Clear the old logfile and touch it
+if [[ -e $logfile ]]; then
+    rm $logfile
+    touch $logfile
+fi
+
+# Clear the old outfile and touch it
+if [[ -e $outfile ]]; then
+    rm $outfile
+    touch $outfile
+fi
+
+# Display the header
+echo_t "  * pyXFlow configuration script"
+echo_t "  Invoked with:"
+echo_t "  $scriptname $@"
+echo_t "  "
+
+# If we run without options, make sure we know -help displays them
+if [[ "$#" == 0 ]]; then
+    echo_t "  Running without options"
+    echo_t "  To show options, run with $scriptname -help"
+    echo_t "  "
+fi
+
+# Process the options
+while [[ $1 ]]; do
+    case $1 in
+	-xflow | --xflow )
+	    shift
+	    xflow_home="$1"
+	    shift
+	    ;;
+	-python | --python )
+	    shift
+	    python_exec="$1"
+	    shift
+	    ;;
+	-version | --version )
+	    shift
+	    python_ver="$1"
+	    shift
+	    ;;
+	-arch | --arch )
+	    shift
+	    sys_arch="$1"
+	    shift
+	    ;;
+	-eqnset | --eqnset )
+	    shift
+	    eqnset="$1"
+	    shift
+	    ;;
+	-nolapack | --nolapack )
+	    flapack="false"
+	    shift
+	    ;;
+	-blas | blas)
+	    fblas="false"
+	    shift
+	    ;;
+	-help | -h | --help)
+	    usage
+	    exit_ok
+	    ;;
+	*)
+	    unknown_option
+	    ;;
+    esac
+done
+
+# Inform user of options
+echo_t "  Configuration settings"
+echo_t "  * Operating system is $os"
+echo_t "  * Architecture is $sys_arch"
+echo_t "  * Python version is $python_ver"
+echo_t "  * XFlow path is $xflow_home"
+echo_t "  * Equation set is $eqnset"
+newline
+
+
+# Check for the XFlow binary.
+if ! [ -f "$xflow_home/bin/xflow" ]; then
+    echo_t "XFlow binary could not be found!"
+    echo_t "Attempted to find it at:"
+    echo_t "   $xflow_home/bin/xflow"
+    newline
+    exit_fail
+fi
+
+# Check for the XFlow library.
+if ! [ -f "$xflow_home/lib/lib$eqnset.so" ]; then
+    echo_t "XFlow library could not be found!"
+    echo_t "Attempted to find it at:"
+    echo_t "   $xflow_home/lib/lib$eqnset.so"
+    newline
+    exit_fail
+fi
+
+# Assemble a variable for the list of libraries.
+if [ "$fblas" != "false" ]; then
+    if [ "$flapack" != "false" ]; then
+        # Both libraries
+        libs='["blas", "lapack"]'
+    else
+        # Just BLAS
+        libs='["blas"]'
+    fi
+elif [ "$flapack" != "false" ]; then
+    # Just LAPACK
+    libs='["lapack"]'
+else
+    # Niether
+    libs='[]'
+fi
+
+# Start writing configuration file
+cat > $outfile <<EOF
+[python]
+exec = $python_exec
+version = $python_ver
+arch = $sys_arch
+
+[xflow]
+home = $xflow_home
+eqnset = $eqnset
+libs = $libs
+EOF
+
