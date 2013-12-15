@@ -129,8 +129,10 @@ class xf_Plot:
         if All is None:
             All = xf_All(fname)
         
-        # Initialize figure handle.
+        # Initialize some handles.
         self.figure = None
+        self.axes = None
+        self.state = None
         
         # Produce the initial plot.
         self.Plot(All, **kwargs)
@@ -216,6 +218,8 @@ class xf_Plot:
         
         # Limits on plot window
         xlim = [xmin, xmax, ymin, ymax]
+        # Save the limits.
+        self.xlim = xlim
         # Get the calculated vector, triangulation, and mesh lines.
         X, u, T, L = px.PlotData(All._ptr, UG._ptr, xlim)
         # Convert mesh lines to NumPy array.
@@ -229,15 +233,76 @@ class xf_Plot:
         # Draw the requested scalar.
         h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
         
+        # Save the figure and axis handles.
+        self.figure = plt.gcf()
+        self.axes = plt.gca()
+        
         # Check for a grid.
         if mesh is True:
             # Nx2 matrix of xy-coordinates for each element
             xx = (X[j,:] for j in L)
             # Make a collection of lines with the same properties.
             h_l = LineCollection(xx, linewidths=0.2, colors=(0,0,0,1))
-            # Have to plot these manually
+            # Add all the lines at once.
             plt.gca().add_collection(h_l)
+            # Save the handle.
+            self.mesh = h_l
+        else:
+            # Save an empty handle.
+            self.mesh = None
+        
+        # Set the limits.
+        plt.axis(xlim)
+        # Autoscale the figure window.
+        self.AutoScale()
         
         # return the handle
         self.state = h_t
+        
+        
+    # Function to draw a NEW figure at the correct size
+    def AutoScale(self):
+        """
+        h_p.AutoScale()
+        
+        INPUTS:
+           h_p  : xf_Plot instance, with following properties defined
+              .figure : handle to figure/plot window
+              .axes   : handle to the axes
+              .xlim   : list of [xmin, xmax, ymin, ymax]
+           
+        OUTPUTS:
+           (None)
+        
+        This method has a similar function to `axis('equal')`, but with the
+        additional feature that it resizes the window to have a one-to-one
+        aspect ratio with the axes limits defined in the xf_Plot object.
+        
+        This differs from the behavior of `axis('equal')`, which changes the
+        axis limits to preserve the one-to-one ratio instead of changing the
+        figure size.
+        """
+        
+        # Versions:
+        #  2013-12-15 @dalle   : First version
+        
+        # Extract the limits.
+        xlim = self.xlim
+        # Get the aspect ratio.
+        AR = (xlim[3]-xlim[2]) / (xlim[1]-xlim[0])
+        
+        # Get the width of the figure.
+        w = self.figure.get_size_inches()[0]
+        # Extract the axes sizing info in two steps.
+        p_a = self.axes.get_position()
+        # Relative width and height (relative to figure size)
+        x = p_a.bounds[2]
+        y = p_a.bounds[3]
+        
+        # Determine the appropriate figure height
+        h = AR * x * w / y
+        # Set the figure size (and update).
+        self.figure.set_size_inches(w, h, forward=True)
+        
+        return None
 
