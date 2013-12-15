@@ -347,7 +347,6 @@ px_PlotData(PyObject *self, PyObject *args)
 		} // elem, element index 
 	} // i, GenArray (or ElementGroup) index
 	
-	
 	// Number of nodes: output for Python
 	dims[0] = ix;
 	// Number of coordinates

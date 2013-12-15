@@ -1,5 +1,5 @@
 """
-PyXFlow
+pyXFlow
 =======
 
 pyXFlow is a python interface to some of the functionality of libXF, the
