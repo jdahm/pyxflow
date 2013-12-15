@@ -141,20 +141,22 @@ class xf_Plot:
         
         
         
-    def Plot(self, All, xyrange=None, vgroup='State', scalar=None, mesh=False,
-        xmin=None, xmax=None, ymin=None, ymax=None):
+    def Plot(self, All, xyrange=None, vgroup='State', scalar=None, **kwargs):
         """
-        h_p = xf_Plot.Plot(All, xyrange=None, vgroup='State', scalar=None, mesh=False)
+        h_p = xf_Plot.Plot(All, xyrange=None, vgroup='State', scalar=None, **kwargs)
         
         INPUTS:
            All     : xf_All object
            xyrange : list of coordinates to plot (Note 1)
            vgroup  : title of vector group to use
            scalar  : name of scalar to plot (Note 2)
-           mesh    : flag to draw a mesh
         
         OUTPUTS:
-           h_t     : <matplotlib.pyplot.tripcolor> instance
+           h_t : <matplotlib.pyplot.tripcolor> instance
+        
+        KEYWORD ARGUMENTS:
+           mesh      : flag to draw a mesh
+           AutoScale : automatically resize figure to fit data range
         
         
         This is the plotting method for the xf_All class.  More capabilities
@@ -188,6 +190,12 @@ class xf_Plot:
         # This is for 2D right now!
         if All.Mesh.Dim != 2:
             raise NotImplementedError("3D plotting is not implemented.")
+        
+        # Process dimension kwargs.
+        xmin = kwargs.get('xmin', None)
+        xmax = kwargs.get('xmax', None)
+        ymin = kwargs.get('ymin', None)
+        ymax = kwargs.get('ymax', None)
         
         # Process the window for plotting.
         if xyrange is not None:
@@ -238,7 +246,7 @@ class xf_Plot:
         self.axes = plt.gca()
         
         # Check for a grid.
-        if mesh is True:
+        if kwargs.get('mesh', True) is True:
             # Nx2 matrix of xy-coordinates for each element
             xx = (X[j,:] for j in L)
             # Make a collection of lines with the same properties.
@@ -251,22 +259,51 @@ class xf_Plot:
             # Save an empty handle.
             self.mesh = None
         
-        # Set the limits.
-        plt.axis(xlim)
+        # Check whether or not to fill the window
+        if kwargs.get('fill', False) is True:
+            self.FillWindow()
+        
         # Autoscale the figure window.
-        self.AutoScale()
+        if kwargs.get('AutoScale', True) is True:
+            self.AutoScale()
         
         # return the handle
         self.state = h_t
         
         
-    # Function to draw a NEW figure at the correct size
+    # Method to make plot fill the window
+    def FillWindow(self):
+        """
+        h_p.FillWindow()
+        
+        INPUTS:
+           h_p : xf_Plot instance, with following properties defined
+              .axes : handle to the axes
+        
+        OUTPUTS:
+           (None)
+           
+        This method simply sets the limits of the axes so that it takes up the
+        entire figure window.
+        """
+        # Versions:
+        #  2013-12-15 @dalle   : First version
+        
+        # Get the axes handle.
+        h_a = self.axes
+        # Set the position in relative (scaled) units.
+        h_a.set_position([0, 0, 1, 1])
+        
+        return None
+        
+        
+    # Method to draw a NEW figure at the correct size
     def AutoScale(self):
         """
         h_p.AutoScale()
         
         INPUTS:
-           h_p  : xf_Plot instance, with following properties defined
+           h_p : xf_Plot instance, with following properties defined
               .figure : handle to figure/plot window
               .axes   : handle to the axes
               .xlim   : list of [xmin, xmax, ymin, ymax]
@@ -301,6 +338,8 @@ class xf_Plot:
         
         # Determine the appropriate figure height
         h = AR * x * w / y
+        # Set the limits of hte plot window.
+        plt.axis(xlim)
         # Set the figure size (and update).
         self.figure.set_size_inches(w, h, forward=True)
         
