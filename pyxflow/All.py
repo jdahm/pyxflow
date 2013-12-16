@@ -3,6 +3,8 @@
 # Versions:
 #  2013-09-18 @jdahm   : First version
 #  2013-09-23 @jdahm   : Integrated C-API
+#  2013-09-29 @dalle   : Added a plot method
+#  2013-12-15 @dalle   : First version of xf_Plot class
 
 # ------- Modules required -------
 # Matplotlit essentials
@@ -11,6 +13,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 # Line collection
 from matplotlib.collections import LineCollection
+# Color conversion
+from matplotlib.colors import colorConverter 
+# Import the customizable colormap class
+from matplotlib.colors import LinearSegmentedColormap
 
 # The background pyxflow workhorse module
 import _pyxflow as px
@@ -20,9 +26,6 @@ from pyxflow.Mesh import xf_Mesh
 from pyxflow.Geom import xf_Geom
 # DataSet
 from pyxflow.DataSet import xf_DataSet
-# Plotting routines
-# from pyxflow.Plot import xf_Plot
-
 
 
 
@@ -293,6 +296,9 @@ class xf_Plot:
         h_a = self.axes
         # Set the position in relative (scaled) units.
         h_a.set_position([0, 0, 1, 1])
+        # Update.
+        if plt.isinteractive():
+            plt.draw()
         
         return None
         
@@ -338,10 +344,93 @@ class xf_Plot:
         
         # Determine the appropriate figure height
         h = AR * x * w / y
-        # Set the limits of hte plot window.
+        # Set the limits of the plot window.
         plt.axis(xlim)
         # Set the figure size (and update).
         self.figure.set_size_inches(w, h, forward=True)
         
         return None
+        
+        
+    # Method to customize the colormap
+    def set_colormap(self, colorList):
+        """
+        h_p.set_colormap(colorList)
+        
+        """
+        # Versions:
+        #  2013-12-15 @dalle   : First version
+        
+        # Use the method below.
+        set_colormap(self.state, colorList)
+        return None
 
+def set_colormap(h, colorList):
+    """
+    set_colormap(h, colorList)
+    
+    """
+    # Versions:
+    #  2013-12-15 @dalle   : Introductory version
+    
+    # Determine the nature of the handle.
+    if not hasattr(h, 'set_cmap'):
+        raise AttributeError(
+            "Input to set_colormap must have 'set_cmap' attribute.")
+        
+    # Check for named colormap
+    if isinstance(colorList, str):
+        raise IOError(
+            "Named color maps are not implemented.")
+    
+    # Get dimensions of the list.
+    nColors = len(colorList)
+    
+    # Determine if break points are specified.
+    if len(colorList[0]) == 2:
+        # User-specified break points
+        vList = [c[1] for c in colorList]
+        # Names of the colors
+        cList = [c[0] for c in colorList]
+    else:
+        # Default break points
+        vList = np.linspace(0, 1, nColors)
+        # Names of the colors
+        cList = list(colorList)
+        
+    # Copy the color list to make a left and right break points.
+    c1List = cList
+    c2List = cList
+    # Find repeated colors.
+    iRepeat = np.nonzero(np.diff(vList) <= 1e-8)
+    # Compress the list of breakpoints.
+    vList = np.delete(vList, iRepeat)
+    # Process the repeated colors in reverse order.
+    for i in iRepeat[::-1]:
+        # Delete the second color at the same point from the "left" list.
+        c1List = np.delete(c1List, i)
+        # Delete the first color at the same point from the "right" list.
+        c2List = np.delete(c2List, i+1)
+    
+    # Convert the colors to RGB.
+    rgba1List = colorConverter.to_rgba_array(c1List)
+    rgba2List = colorConverter.to_rgba_array(c2List)
+    
+    # Make the lists for the individual components (red, green, blue).
+    rList = [(vList[i], rgba1List[i,0], rgba2List[i,0])
+        for i in range(vList.size)]
+    gList = [(vList[i], rgba1List[i,1], rgba2List[i,1])
+        for i in range(vList.size)]
+    bList = [(vList[i], rgba1List[i,2], rgba2List[i,2])
+        for i in range(vList.size)]
+    aList = [(vList[i], rgba1List[i,3], rgba2List[i,3])
+        for i in range(vList.size)]
+    # Make the required dictionary for the colormap.
+    cdict = {'red':rList, 'green':gList, 'blue':bList, 'alpha':aList}
+    # Set the colormap.
+    cm = LinearSegmentedColormap('custom', cdict)
+    # Apply the colormap
+    h.set_cmap(cm)
+    # Return nothing
+    return None
+    
