@@ -1,6 +1,8 @@
 #include <Python.h>
 #include "xf_AllStruct.h"
 #include "xf_All.h"
+#include "xf_EqnSetHook.h"
+#include <dlfcn.h>
 
 PyObject *
 px_CreateAll(PyObject *self, PyObject *args)
@@ -9,7 +11,7 @@ px_CreateAll(PyObject *self, PyObject *args)
 	enum xfe_Bool DefaultFlag;
         xf_All *All = NULL;
 
-	if (!PyArg_ParseTuple(args, "b", DefaultFlag)) return NULL;
+	if (!PyArg_ParseTuple(args, "b", &DefaultFlag)) return NULL;
 
 	// Allocate the xf_All struct
 	ierr = xf_Error(xf_CreateAll(&All, DefaultFlag));
@@ -31,6 +33,8 @@ px_DestroyAll(PyObject *self, PyObject *args)
 	ierr = xf_Error(xf_DestroyAll(All));
 	if (ierr != xf_OK) return NULL;
 
+        xf_CloseEqnSetLibrary();
+
 	// Nothing to return
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -49,6 +53,33 @@ px_ReadAllInputFile(PyObject *self, PyObject *args)
 	// Create and read in the xf_All struct from file
 	ierr = xf_Error(xf_ReadAllInputFile(InputFile, NULL, DefaultFlag, &All));
 	if (ierr != xf_OK) return NULL;
+
+	// Return the pointer
+	return Py_BuildValue("n", All);
+}
+
+PyObject *
+px_ReadAllBinary(PyObject *self, PyObject *args)
+{
+	int ierr;
+        enum xfe_Bool DefaultFlag;
+	char *XfaFile;
+        xf_All *All = NULL;
+
+	if (!PyArg_ParseTuple(args, "sb", &XfaFile, &DefaultFlag)) return NULL;
+
+	// Create and read in the xf_All struct from file
+        ierr = xf_Error(xf_CreateAll(&All, DefaultFlag));
+        if (ierr != xf_OK) return NULL;
+
+	ierr = xf_Error(xf_ReadAllBinary(XfaFile, All));
+	if (ierr != xf_OK) return NULL;
+
+        ierr = xf_LoadEqnSetLibrary(All->EqnSet->EqnSetLibrary);
+        if (ierr != xf_OK) return NULL;
+
+        ierr = xf_Error(xf_EqnSetRegister(All->EqnSet));
+        if (ierr != xf_OK) return NULL;
 
 	// Return the pointer
 	return Py_BuildValue("n", All);

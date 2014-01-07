@@ -52,6 +52,24 @@ OUTPUTS:
 */
 
 PyObject *
+px_ReadAllBinary(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Creates an xf_All struct by calling xf_ReadAllInputFile with an
+  input file.
+
+CALL:
+  A = px.ReadAllBinary(XfaFile, DefaultFlag)
+
+INPUTS:
+  XfaFile   : Input filename
+  DefaultFlag : true to set default parameters
+
+OUTPUTS:
+  A : xf_All pointer
+*/
+
+PyObject *
 px_WriteAllBinary(PyObject *self, PyObject *args);
 /*
 PURPOSE:

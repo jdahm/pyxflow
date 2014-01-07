@@ -215,6 +215,11 @@ else
     libs='[]'
 fi
 
+# compiler options
+cflags='["-Wall", "-Wno-unused-function", "-Wno-unused-variable", "-Wno-unused-but-set-variable", "-Wno-parentheses", "-Wno-format", "-Werror-implicit-function-declaration", "-g"]'
+
+ldflags='["-Wl,--export-dynamic"]'
+
 # Start writing configuration file
 cat > $outfile <<EOF
 [python]
@@ -226,5 +231,8 @@ arch = $sys_arch
 home = $xflow_home
 eqnset = $eqnset
 libs = $libs
-EOF
 
+[compiler]
+cflags = $cflags
+ldflags = $ldflags
+EOF

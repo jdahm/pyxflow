@@ -8,7 +8,10 @@
 # Used for more efficient data storage
 import numpy as np
 # The background pyxflow workhorse module
-import pyxflow._pyxflow as px
+import _pyxflow as px
+# Matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 
 # ------- CLASSES -------
 # --- Class to represent the (full) mesh ---
@@ -85,7 +88,6 @@ class xf_Mesh:
         # Get the ElemGroups
         self.ElemGroup = [xf_ElemGroup(ptr=self._ptr, i=i) 
             for i in range(self.nElemGroup)]
-        
 
 
     # Destructor method for xf_Mesh
@@ -101,7 +103,51 @@ class xf_Mesh:
         
         if self.owner:
             px.DestroyMesh(self._ptr)
-            
+
+
+    def Plot(self, **kwargs):
+        if kwargs.get('xmin') is not None:
+            xmin = kwargs['xmin']
+        else:
+            xmin = [None for i in range(self.Dim)]
+
+        if kwargs.get('xmax') is not None:
+            xmax = kwargs['xmax']
+        else:
+            xmax = [None for i in range(self.Dim)]
+
+        for i in range(self.Dim):
+            if xmin[i] is None: xmin[i] = self.Coord[:,i].min()
+            if xmax[i] is None: xmax[i] = self.Coord[:,i].max()
+
+        if kwargs.get('figure') is not None:
+            self.figure = kwargs['figure']
+        else:
+            self.figure = plt.figure()
+
+        if kwargs.get('axes') is not None:
+            self.axes = kwargs['axes']
+        else:
+            self.axes = self.figure.gca()
+
+        x, y, c = px.MeshPlotData(self._ptr, xmin, xmax)
+        print c, x, y
+        s = []
+        for f in range(len(c)-1):
+            s.append( zip(x[c[f]:c[f+1]], y[c[f]:c[f+1]]) )
+            print s
+        print s
+
+        line_options = kwargs.get('line_options', {})
+
+        c = LineCollection(s, colors=(0,0,0,1), **line_options)
+        self.axes.add_collection(c)
+
+        if kwargs.get('reset_limits', True):
+            self.axes.set_xlim(xmin[0], xmax[0])
+            self.axes.set_ylim(xmin[1], xmax[1])
+
+        self.figure.savefig("figure.pdf")
 
 # --- Class for boundary face groups ---
 class xf_BFaceGroup:

@@ -58,6 +58,10 @@ static PyMethodDef Methods[] = {
 		"Get pointers to vectors from xf_VectorGroup"},
 	{"GetVector", px_GetVector, METH_VARARGS,
 		"Get information on xf_Vector from pointer"},
+	{"GetVectorFromGroup", px_GetVectorFromGroup, METH_VARARGS,
+		"Function to return a vector from a group given a role"},
+	{"GetPrimalState", px_GetPrimalState, METH_VARARGS,
+		"Return a pointer to the primal state vector group"},
 	{"GetGenArray", px_GetGenArray, METH_VARARGS,
 		"Get information from an xf_GenArray pointer"},
 	// xf_All methods
@@ -66,16 +70,18 @@ static PyMethodDef Methods[] = {
 	{"DestroyAll", px_DestroyAll, METH_VARARGS,
 		"Destroy all and free memory"},
 	{"ReadAllInputFile", px_ReadAllInputFile, METH_VARARGS,
-		"Read all from input file"},
+		"Reads from input file"},
+	{"ReadAllBinary", px_ReadAllBinary, METH_VARARGS,
+		"Read xf_All from input file"},
 	{"WriteAllBinary", px_WriteAllBinary, METH_VARARGS,
 		"Writes all to binary file"},
 	{"GetAllMembers", px_GetAllMembers, METH_VARARGS,
 		"Returns a tuple of pointers to the members of the xf_All"},
 	// Plotting methods
-	{"PlotData", px_PlotData, METH_VARARGS,
-		"Creates network of triangles and values for plotting"},
-	{"GetRefineCoords", px_GetRefineCoords, METH_VARARGS,
-		"Wrapper for xf_GetRefineCoords"},
+	{"MeshPlotData", px_MeshPlotData, METH_VARARGS,
+		"Creates data for plotting a mesh"},
+	{"ScalarPlotData", px_ScalarPlotData, METH_VARARGS,
+		"Creates data for plotting a scalar"},
 	{NULL, NULL, 0, NULL}
 };
 

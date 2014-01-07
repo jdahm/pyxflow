@@ -33,7 +33,7 @@ PyObject *
 px_ReadGeomFile(PyObject *self, PyObject *args)
 {
 	xf_Geom *Geom = NULL;
-	const char *fname;
+	char *fname;
 	int ierr;
 	
 	// Parse the python inputs.
@@ -59,7 +59,7 @@ PyObject *
 px_WriteGeomFile(PyObject *self, PyObject *args)
 {
 	xf_Geom *Geom = NULL;
-	const char *fname;
+        char *fname;
 	int ierr;
 	
 	// Parse the Python inputs.

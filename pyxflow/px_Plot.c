@@ -1,437 +1,825 @@
 #include <Python.h>
+
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #define PY_ARRAY_UNIQUE_SYMBOL _pyxflow_ARRAY_API
 #define NO_IMPORT_ARRAY
 #include <numpy/arrayobject.h>
-#include <xf_AllStruct.h>
-#include <xf_ResidualStruct.h>
-#include <xf_All.h>
-#include <xf_Basis.h>
+
+#include "xf_AllStruct.h"
+#include "xf_ResidualStruct.h"
+#include "xf_All.h"
+#include "xf_Mesh.h"
+#include "xf_Basis.h"
+#include "xf_Memory.h"
+#include "xf_MeshTools.h"
+#include "xf_Math.h"
+#include "xf_Residual.h"
+#include "xf_EqnSetHook.h"
+#include "xf_Data.h"
+
+#define DIMP 2
+#define TRINN 3
+
+/* General plotting supporting functions and objects */
+
+typedef struct{
+  int nnode; // number of nodes in refinement
+  real *xref; // reference coordinates of nodes
+  int nselem; // number of subelements
+  int *selem; // list of subelement nodes (unrolled)
+  int nsbound; // number of subelement boundary edges/faces
+  int *sbound; // list of subelement boundary edges/faces
+
+  real *xglob; // global coordinates of nodes
+
+  enum xfe_Bool PointsChanged; // True if points have changed
+  enum xfe_ShapeType Shape; // shape
+  enum xfe_BasisType Basis; // basis
+  int Order; // basis order
+  xf_BasisData *PhiData; // basis data
+} SubData;
+
+static int
+InitSubData(SubData *SD)
+{
+  SD->nnode = 0;
+  SD->xref = NULL;
+  SD->nselem = 0;
+  SD->selem = NULL;
+  SD->nsbound = 0;
+  SD->sbound = NULL;
+  SD->xglob = NULL;
+
+  SD->PointsChanged = xfe_True;
+  SD->Shape = xfe_ShapeLast;
+  SD->Basis = xfe_BasisLast;
+  SD->Order = -1;
+  SD->PhiData = NULL;
+
+  return xf_OK;
+}
+
+static int
+DestroySubData(SubData *SD)
+{
+  int ierr;
+
+  xf_Release((void *) SD->xref );
+  xf_Release((void *) SD->selem );
+  xf_Release((void *) SD->sbound );
+  xf_Release((void *) SD->xglob );
+
+  ierr = xf_Error(xf_DestroyBasisData(SD->PhiData, xfe_False));
+  if (ierr != xf_OK) return ierr;
+
+  return xf_OK;
+}
+
+static int
+FindElemSubData(xf_Mesh *Mesh, int egrp, int elem, const int *pOrder, SubData *SD){
+  int ierr, dim, pnn, Order;
+  enum xfe_BasisType QBasis, QOrder;
+  enum xfe_ShapeType Shape;
+
+  dim = Mesh->Dim;
+
+  QOrder = Mesh->ElemGroup[egrp].QOrder;
+  QBasis = Mesh->ElemGroup[egrp].QBasis;
+
+  Order = ((pOrder != NULL) ? (*pOrder) : QOrder);
+
+  ierr = xf_Error(xf_Basis2Shape(QBasis, &Shape));
+  if (ierr != xf_OK) return ierr;
+
+  SD->PointsChanged = xfe_False;
+
+  // Do we need to recalculate?
+  if ((Shape != SD->Shape) || (Order != SD->Order)){
+    SD->PointsChanged = xfe_True;
+
+    pnn = SD->nnode;
+
+    // Get the element subdivision
+    ierr = xf_Error(xf_GetRefineCoords(Shape, Order, &SD->nnode, &SD->xref,
+                                       &SD->nselem, &SD->selem, &SD->nsbound, &SD->sbound));
+    if (ierr != xf_OK) return ierr;
+
+    // Reallocate xref if needed
+    if (pnn != SD->nnode){
+      ierr = xf_Error(xf_ReAlloc((void **) &SD->xglob, dim*SD->nnode, sizeof(real)));
+      if (ierr != xf_OK) return ierr;
+    }
+  }
+
+  ierr = xf_Error(xf_Ref2GlobElem(Mesh, egrp, elem, &SD->PhiData, SD->PointsChanged,
+                                  SD->nnode, SD->xref, SD->xglob));
+  if (ierr != xf_OK) return ierr;
+
+  return xf_OK;
+}
+
+static int
+FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubData *SD){
+  int ierr, dim, pnn, Order, egrp, elem, face;
+  enum xfe_BasisType QBasis, QOrder;
+  enum xfe_ShapeType Shape;
+
+  dim = Mesh->Dim;
+
+  // Get data from left element
+  xf_FaceElements(Mesh, ibfgrp, ibface, &egrp, &elem, &face, NULL, NULL, NULL);
+
+  QOrder = Mesh->ElemGroup[egrp].QOrder;
+  QBasis = Mesh->ElemGroup[egrp].QBasis;
+
+  Order = ((pOrder != NULL) ? (*pOrder) : QOrder);
+
+  ierr = xf_Error(xf_Basis2Shape(QBasis, &Shape));
+  if (ierr != xf_OK) return ierr;
+
+  SD->PointsChanged = xfe_False;
+
+  // Do we need to recalculate?
+  if ((Shape != SD->Shape) || (Order != SD->Order)){
+    SD->PointsChanged = xfe_True;
+
+    pnn = SD->nnode;
+
+    // Get the element subdivision
+    ierr = xf_Error(xf_GetRefineCoordsOnFace(Shape, face, Order, &SD->nnode, &SD->xref,
+                                             &SD->nselem, &SD->selem, &SD->nsbound, &SD->sbound));
+    if (ierr != xf_OK) return ierr;
+
+    // Reallocate xref if needed
+    if (pnn != SD->nnode){
+      ierr = xf_Error(xf_ReAlloc((void **) &SD->xglob, dim*SD->nnode, sizeof(real)));
+      if (ierr != xf_OK) return ierr;
+    }
+  }
+
+  ierr = xf_Error(xf_Ref2GlobElem(Mesh, egrp, elem, &SD->PhiData, SD->PointsChanged,
+                                  SD->nnode, SD->xref, SD->xglob));
+  if (ierr != xf_OK) return ierr;
+
+  return xf_OK;
+}
 
 
+static enum xfe_Bool
+PointInsideBoundingBox(int dim, const real *x, const real *xmin, const real *xmax, real buffer)
+{
+  int d;
+  enum xfe_Bool Inside = xfe_True;
+  real min, max;
 
-// Function to evaluate one GenArray on a basis.
+  for (d=0; (d<dim) && Inside; d++){
+    min = xmin[d] - (xmax[d] - xmin[d]) * buffer;
+    max = xmax[d] + (xmax[d] - xmin[d]) * buffer;
+    if ( (x[d] < min) || (x[d] > max) ) Inside = xfe_False;
+  }
+  return Inside;
+}
+
+static int
+ElemInsideBoundingBox(const xf_Mesh *Mesh, int egrp, int elem, const real *xmin, const real *xmax,
+                      real buffer, enum xfe_Bool *Inside)
+{
+  /* Simply check the nodes on the element for now In the future,
+     maybe should check the global positions of nodes on faces, since
+     nodes could be completely interior to the element. */
+
+  int ierr, dim, i, d, inode, Order, nn;
+  enum xfe_BasisType Basis;
+  real xglob[xf_MAXDIM];
+
+  dim = Mesh->Dim;
+
+  Order = Mesh->ElemGroup[egrp].QOrder;
+  Basis = Mesh->ElemGroup[egrp].QBasis;
+
+  ierr = xf_Error(xf_Order2nNode(Basis, Order, &nn));
+  if (ierr != xf_OK) return ierr;
+
+  (*Inside) = xfe_False;
+
+  for (i=0; (i<nn) && (!(*Inside)); i++){
+    inode = Mesh->ElemGroup[egrp].Node[elem][i];
+    for (d=0; d<dim; d++)
+      xglob[d] = Mesh->Coord[inode][d];
+    (*Inside) = PointInsideBoundingBox(dim, xglob, xmin, xmax, buffer);
+  }
+
+  return xf_OK;
+}
+
+static int
+UnpackRealList(PyObject *PyL, int n, real *l, enum xfe_Bool fit)
+{
+  int i;
+
+  // Check type
+  if (!PyList_Check(PyL)) {
+    PyErr_SetString(PyExc_TypeError, "Input must be a list");
+    return xf_MEMORY_ERROR;
+  }
+
+  // Check dimension
+  if (fit && ((int) PyList_Size(PyL) != n)) {
+    PyErr_SetString(PyExc_RuntimeError, "Input has incorrect dimensions");
+    return xf_MEMORY_ERROR;
+  }
+
+  // Unpack
+  for (i=0; i<n; i++) {
+    l[i] = (real) PyFloat_AsDouble(PyList_GetItem(PyL, i));
+    // l[i] = (real) PyList_GetItem(PyL,i);
+  }
+
+  return xf_OK;
+}
+
+/* Mesh plotting */
+
+typedef struct{
+  real *x; // global coordinates of nodes on face
+  int *nn; // number of nodes
+  int xsize; // size of xglob allocated
+  int nnsize; // size of nn allocated
+  int nface; // number of faces
+} MeshPlotData;
+
+static int
+InitMeshPlotData(MeshPlotData *MPD)
+{
+  MPD->x  = NULL;
+  MPD->nn = NULL;
+  MPD->xsize = 0;
+  MPD->nnsize = 0;
+  MPD->nface = 0;
+  return xf_OK;
+}
+
+static int
+DestroyMeshPlotData(MeshPlotData *MPD)
+{
+  xf_Release((void *) MPD->x );
+  xf_Release((void *) MPD->nn);
+
+  return xf_OK;
+}
+
+
+static int
+MeshPlotData_1D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *MPD)
+{
+  int ierr, nface, face, nn, i, f;
+  real xref[xf_MAXDIM], xglob[xf_MAXDIM];
+  enum xfe_Bool OnLeft;
+  enum xfe_FaceType FaceType;
+  xf_IFace IFace;
+  xf_Face Face;
+
+  if ((nface = Mesh->ElemGroup[egrp].nFace[elem]) != 2) return xf_CODE_LOGIC_ERROR;
+
+  // Reallocate MPD->nn if necessary
+  if (MPD->nnsize < nface){
+    MPD->nnsize = nface;
+    ierr = xf_Error(xf_ReAlloc((void **)&MPD->nn, MPD->nnsize, sizeof(int)));
+    if (ierr != xf_OK) return ierr;
+  }
+
+  // in 1D, the node is always at reference coordinate xi=0. on the face
+  xref[0] = 0.;
+
+  for (face=0, i=0, f=0; face<nface; face++){
+    Face = Mesh->ElemGroup[egrp].Face[elem][face];
+    xf_FaceGroupInfo(Mesh, Face.Group, &FaceType, NULL, NULL);
+
+    if (FaceType == xfe_FaceInterior){
+      IFace = Mesh->IFace[Face.Number];
+
+      ierr = xf_Error(xf_IsElemOnLeft(IFace, egrp, elem, &OnLeft));
+      if (ierr != xf_OK) return ierr;
+    }
+    else OnLeft = xfe_True;
+
+    if (!OnLeft) continue;
+
+    // always only one node on the face
+    nn = 1;
+
+    // Reallocate MPD->x if necessary
+    if (MPD->xsize < DIMP*(i+nn)){
+      MPD->xsize = DIMP*(i+nn);
+      ierr = xf_Error(xf_ReAlloc((void **)&MPD->x, MPD->xsize, sizeof(real)));
+      if (ierr != xf_OK) return ierr;
+    }
+
+    ierr = xf_Error(xf_Ref2GlobFace(Mesh, Face.Group, Face.Number, &FSD->PhiData, nn, xref, xglob));
+    if (ierr != xf_OK) return ierr;
+
+    // in 1D, y-position in plot is set to 0.0
+    MPD->x[i*DIMP+0] = xglob[0];
+    MPD->x[i*DIMP+1] = 0.0;
+
+    MPD->nn[f] = 1;
+
+    f++;
+    i += nn;
+  } // face
+
+  // store number of faces in view
+  MPD->nface = f;
+
+  return xf_OK;
+}
+
+static int
+MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *MPD)
+{
+  int ierr, nface, face, nn, i, f, ibfgrp;
+  enum xfe_Bool OnLeft;
+  enum xfe_FaceType FaceType;
+  xf_IFace IFace;
+  xf_Face Face;
+
+  nface = Mesh->ElemGroup[egrp].nFace[elem];
+
+  // Reallocate MPD->nn if necessary
+  if (MPD->nnsize < nface){
+    MPD->nnsize = nface;
+    ierr = xf_Error(xf_ReAlloc((void **)&MPD->nn, MPD->nnsize, sizeof(int)));
+    if (ierr != xf_OK) return ierr;
+  }
+
+  for (face=0, i=0, f=0; face<nface; face++){
+    Face = Mesh->ElemGroup[egrp].Face[elem][face];
+    xf_FaceGroupInfo(Mesh, Face.Group, &FaceType, NULL, NULL);
+
+    if (FaceType == xfe_FaceInterior){
+      IFace = Mesh->IFace[Face.Number];
+
+      ierr = xf_Error(xf_IsElemOnLeft(IFace, egrp, elem, &OnLeft));
+      if (ierr != xf_OK) return ierr;
+
+      // TODO Figure out why/how ibfgrp is inconsistent
+      ibfgrp = -1;
+    }
+    else{
+      OnLeft = xfe_True;
+      ibfgrp = Face.Group-1;
+    }
+
+    if (!OnLeft) continue;
+
+    ierr = xf_Error(FindFaceSubData(Mesh, ibfgrp, Face.Number, NULL, FSD));
+    if (ierr != xf_OK) return ierr;
+
+    nn = FSD->nnode;
+
+    // Reallocate MPD->x if necessary
+    if (MPD->xsize < DIMP*(i+nn)){
+      MPD->xsize = DIMP*(i+nn);
+      ierr = xf_Error(xf_ReAlloc((void **)&MPD->x, MPD->xsize, sizeof(real)));
+      if (ierr != xf_OK) return ierr;
+    }
+
+    // copy global coordinates
+    xf_V_Add(FSD->xglob, DIMP*nn, xfe_Set, MPD->x+DIMP*i);
+
+    MPD->nn[f] = nn;
+
+    f++;
+    i += nn;
+  } // face
+
+  // store number of faces in view
+  MPD->nface = f;
+
+  return xf_OK;
+}
+
+static int
+MeshPlotData_3D(xf_Mesh *Mesh, int egrp, int elem, SubData *ESD, SubData *FSD, MeshPlotData *MPD)
+{
+  return xf_NOT_SUPPORTED;
+}
+
+/* Scalar plotting */
+
+typedef struct{
+  int egrp, elem; // element index
+  int *IParam; // integer parameter array for EqnSet
+  real *RParam; // real-valued parameter array for EqnSet
+  int nAux; // number of auxiliary vectors
+  xf_Vector **VAux; // pointers to auxiliary vectors
+  real *U, *gU; // storage for state and gradient at plotting nodes
+  int Usize, gUsize; // size of storage at plotting nodes
+  real *s; // storage for scalar at plotting nodes
+  int ssize; // size of storage for scalar at plotting nodes
+  xf_BasisTable *PhiTable; // table to avoid recalculation of basis functions
+  xf_BasisData *BD; // basis data for interpolating scalar
+  xf_JacobianData *JD; // Jacobian data for calculating gradients
+} ScalarPlotData;
+
+static int
+InitScalarPlotData(xf_EqnSet *EqnSet, ScalarPlotData *SPD)
+{
+  int ierr;
+
+  SPD->egrp = SPD->elem = 0;
+
+  // communicate with EqnSet to fill real and integer parameters
+  ierr = xf_Error(xf_RetrieveFcnParams(NULL, EqnSet, &SPD->IParam, &SPD->RParam, 
+				       &SPD->nAux, &SPD->VAux));
+  if (ierr != xf_OK) return ierr;
+
+  SPD->U = SPD->gU = NULL;
+  SPD->Usize = SPD->gUsize = 0;
+  SPD->s = NULL;
+  SPD->ssize = 0;
+
+  ierr = xf_Error(xf_CreateBasisTable(&SPD->PhiTable));
+  if (ierr != xf_OK) return ierr;
+
+  SPD->BD = NULL;
+  SPD->JD = NULL;
+
+  return xf_OK;
+}
+
+static int
+DestroyScalarPlotData(ScalarPlotData *SPD)
+{
+  int ierr;
+
+  xf_Release((void *) SPD->IParam);
+  xf_Release((void *) SPD->RParam);
+  xf_Release((void *) SPD->VAux);
+  xf_Release((void *) SPD->U );
+  xf_Release((void *) SPD->gU);
+
+  ierr = xf_Error(xf_DestroyBasisData(SPD->BD, xfe_False));
+  if (ierr != xf_OK) return ierr;
+
+  ierr = xf_Error(xf_DestroyBasisTable(SPD->PhiTable));
+  if (ierr != xf_OK) return ierr;
+
+  ierr = xf_Error(xf_DestroyJacobianData(SPD->JD));
+  if (ierr != xf_OK) return ierr;
+
+  return xf_OK;
+}
+
+static int
+ScalarValues(xf_Vector *U, xf_Mesh *Mesh, xf_EqnSet *EqnSet, int egrp, int elem, char *Name, SubData *ESD, ScalarPlotData *SPD)
+{
+  int ierr, i, d, dim, sr, nn, nq, Order;
+  enum xfe_Bool Interpolated;
+  enum xfe_BasisType Basis;
+  real *EU;
+
+  dim = Mesh->Dim;
+  sr = EqnSet->StateRank;
+
+  nq = ESD->nnode;
+
+  EU = U->GenArray[egrp].rValue[elem];
+
+  // Reallocate if necessary
+  if (SPD->Usize < sr*nq){
+    SPD->Usize = sr*nq;
+    ierr = xf_Error(xf_ReAlloc((void **)&SPD->U, SPD->Usize, sizeof(real)));
+    if (ierr != xf_OK) return ierr;
+  }
+  if (SPD->gUsize < dim*sr*nq){
+    SPD->gUsize = dim*sr*nq;
+    ierr = xf_Error(xf_ReAlloc((void **)&SPD->gU, SPD->gUsize, sizeof(real)));
+    if (ierr != xf_OK) return ierr;
+  }
+  if (SPD->ssize < nq){
+    SPD->ssize = nq;
+    ierr = xf_Error(xf_ReAlloc((void **)&SPD->s, SPD->ssize, sizeof(real)));
+    if (ierr != xf_OK) return ierr;
+  }
+
+  Interpolated = ((U->Basis != NULL) && (U->Order != NULL));
+
+  if (!Interpolated && (Name != NULL)) return xf_NOT_SUPPORTED;
+
+  if (Interpolated){
+    xf_InterpOrderBasis(U, egrp, elem, &Order, &Basis);
+
+    ierr = xf_Error(xf_Order2nNode(Order, Basis, &nn));
+    if (ierr != xf_OK) return ierr;
+
+    // Evaluate the basis functions for the vector 
+    ierr = xf_Error(xf_EvalBasisUsingTable(Basis, Order, ESD->PointsChanged, ESD->nnode, ESD->xref,
+                                           xfb_Phi | xfb_GPhi | xfb_gPhi, SPD->PhiTable, &SPD->BD));
+    if (ierr != xf_OK) return ierr;
+
+    // values
+    xf_MxV_Set(SPD->BD->Phi, EU, nq, nn, SPD->U);
+
+    if (Name != NULL){
+      // element Jacobian det and inv at points (only 1 if J is const)
+      ierr = xf_Error(xf_ElemJacobian(Mesh, egrp, elem, ESD->nnode, ESD->xref, xfb_detJ | xfb_iJ, 
+                                      ESD->PointsChanged, &SPD->JD));
+      if (ierr != xf_OK) return ierr;
+
+      ierr = xf_Error(xf_EvalPhysicalGrad(SPD->BD, SPD->JD));
+      if (ierr != xf_OK) return ierr;
+
+      // gradients
+      for (d=0; d<dim; d++)
+        xf_MxM_Set(SPD->BD->gPhi+nn*nq*d, EU, nq, nn, sr, SPD->gU + nq*sr*d);
+
+      ierr = xf_Error(xf_EqnSetScalar(EqnSet, Name, SPD->IParam, SPD->RParam, nq,
+                                      SPD->U, SPD->gU, SPD->s, NULL, NULL, NULL));
+      if (ierr != xf_OK) return ierr;
+    }
+    else for (i=0; i<nq; i++) SPD->s[i] = SPD->U[i*sr];
+  }
+  else for (i=0; i<nq; i++) SPD->s[i] = EU[0];
+
+
+  return xf_OK;
+}
+
+
+static int
+ScalarPlotData_3D(xf_Vector *U, xf_Mesh *Mesh, xf_EqnSet *EqnSet, int egrp, int elem, SubData *ESD)
+{
+  return xf_NOT_SUPPORTED;
+}
+
+
 PyObject*
-px_PlotData(PyObject *self, PyObject *args)
+px_MeshPlotData(PyObject *self, PyObject *args)
 {
-	xf_All *All;
-	xf_ElemGroup EG;
-	xf_VectorGroup *UG;
-	xf_Vector *U;
-	xf_GenArray *G;
-	xf_BasisData *PhiQ, *PhiU;
-	// Output objects
-	PyObject *PyX, *PyU, *PyT, *PyL;
-	// Input list for min/max coordinates
-	PyObject *PyXLim;
-	// Output point and vector arrays
-	real **X=NULL, **u=NULL;
-	// Coordinates, either reference or global
-	real *xn, *xyN, *xyG;
-	// Full state values on individual elements
-	real *EU, *u0;
-	// Coordinates for plot window
-	real *xmin, *xmax, *xmin_i, *xmax_i;
-	// Sizes for NumPy arrays
-	npy_intp dims[2];
-	// Bases for grid and elements
-	enum xfe_BasisType QBasis, UBasis, pUBasis;
-	// Shape type for grid elements
-	enum xfe_ShapeType QShape;
-	// Flag for points in the plot window or not.
-	enum xfe_Bool qLim;
-	// Output triangulation and boundary node list
-	int **T, **L;
-	// Single-element subtriangulation and node list
-	int *T0, *L0;
-	// Number of nodes for each element
-	int *mb;
-	// General indices and limits
-	int ierr, k, i, d, dim, sr;
-	// Grid indices and limits
-	int egrp, nEGrp, elem, nElem;
-	// Orders for grid elements, vector elements, and plot elements
-	int QOrder, UOrder, POrder, pPOrder;
-	// Total/cumulative number of points/triangles/lines
-	int nx, nT, nL, ix, iT, iL;
-	// Current element node numbers
-	int *igN;
-	// Number of triangles/boundary nodes per element
-	int nt, nb, nbmax;
-	// Number of boundary lines per element
-	int nf = 1;
-	// Individual element node counters
-	int nnq, nnu, nnp, nq, nnqmax, nnpmax;
-	
-	// Parse the inputs.
-	if (!PyArg_ParseTuple(args, "nnO", &All, &UG, &PyXLim))
-		return NULL;
-	// Get the element-interior state.
-	if (UG != NULL) {
-		// Pointer to the vector
-		ierr = xf_Error(xf_GetVectorFromGroup(UG, xfe_VectorRoleElemState, &U));
-		if (ierr != xf_OK) return NULL;
-	}
-	// Number of element groups in Mesh
-	nEGrp = All->Mesh->nElemGroup;
-	// Number of states
-	sr = All->EqnSet->StateRank;
-	// Dimension
-	dim = All->Mesh->Dim;
-	// That must equal number of arrays in vector
-	if ((UG != NULL) && (nEGrp != U->nArray)) {
-		ierr = xf_Error(xf_INCOMPATIBLE);
-		PyErr_SetString(PyExc_RuntimeError, 
-			"Array and element groups incompatible.");
-		return NULL;
-	}
-	// Check the [xmin, xmax, ymin, ymax(, zmin, zmax)] list.
-	if (!PyList_Check(PyXLim)) {
-		PyErr_SetString(PyExc_TypeError, "Input limits must be a list");
-		return NULL;
-	}
-	
-	// Check the dimension.
-	if ((int) PyList_Size(PyXLim) != 2*dim) {
-		PyErr_SetString(PyExc_RuntimeError, "Limits must have 2*dim entries");
-		return NULL;
-	}
-	// Allocate vectors for window min and max coordinates.
-	ierr = xf_Error(xf_Alloc((void **) &xmin, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	ierr = xf_Error(xf_Alloc((void **) &xmax, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate vectors for min and max coordinates of each element.
-	ierr = xf_Error(xf_Alloc((void **) &xmin_i, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	ierr = xf_Error(xf_Alloc((void **) &xmax_i, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Loop through dimensions to set window bounds.
-	for (d=0; d<dim; d++) {
-		xmin[d] = (real) PyFloat_AsDouble(PyList_GetItem(PyXLim, 2*d));
-		xmax[d] = (real) PyFloat_AsDouble(PyList_GetItem(PyXLim, 2*d+1));
-	}
-	
-	// Initialize counts
-	nnqmax = 0; nnpmax = 0; nbmax = 0;
-	nx = 0; nT = 0; nL = 0;
-	// Get the total number of triangles and points.
-	for (egrp=0; egrp<nEGrp; egrp++) {
-		// Geometry order and basis
-		QOrder = All->Mesh->ElemGroup[egrp].QOrder;
-		QBasis = All->Mesh->ElemGroup[egrp].QBasis;
-		// Previous order and basis
-		pPOrder = -1;
-		pUBasis = -1;
-		// Number of elements in group
-		nElem = All->Mesh->ElemGroup[egrp].nElem;
-		
-		// Loop through elements
-		for (elem=0; elem<nElem; elem++) {
-			// Get interpolation order and basis.
-			if (UG != NULL) {
-				xf_InterpOrderBasis(U, egrp, elem, &UOrder, &UBasis);
-			} else {
-				UOrder = 0;
-				UBasis = 1;
-			}
-			// Order to be used.
-			POrder = max(QOrder, UOrder);
-			// Redetermine count if necessary.
-			if ((POrder != pPOrder) || (UBasis != pUBasis)) {
-				// Remember the most recent values.
-				pPOrder = POrder;
-				pUBasis = UBasis;
-				
-				// Get the shape type (tris or tets, but just to be safe).
-				ierr = xf_Error(xf_Basis2Shape(QBasis, &QShape));
-				if (ierr != xf_OK) return NULL;
-				
-				// Number of geometry nodes
-				ierr = xf_Error(xf_Order2nNode(QBasis, QOrder, &nnq));
-				if (ierr != xf_OK) return NULL;
-	
-				// Set pointers.
-				xn = NULL;
-				T0 = NULL;
-				L0 = NULL;
-				// Get the element subdivision.
-				ierr = xf_Error(xf_GetRefineCoords(QShape, POrder, &nnp, &xn,
-					&nt, &T0, &nb, &L0));
-				if (ierr != xf_OK) return NULL;
-			}
-			// Add to the number of elements.
-			nx += nnp;
-			// Add to the number of triangles.
-			nT += nt;
-			// Add to the number of boundary lines
-			nL += nf;
-			// Update max number of nodes.
-			nnqmax = max(nnqmax, nnq);
-			nnpmax = max(nnpmax, nnp);
-			// Update maximum number of nodes per boundary trace
-			nbmax = max(nbmax, nb);
-			
-		} // elem, element index 
-	} // egrp, GenArray (or ElementGroup) index
-	
-	// Allocate coordinates.
-	ierr = xf_Error(xf_Alloc2((void ***) &X, nx, dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate states.
-	ierr = xf_Error(xf_Alloc2((void ***) &u, nx, sr, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate triangles
-	ierr = xf_Error(xf_Alloc2((void ***) &T, nT, dim+1, sizeof(int)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate boundary node indices
-	ierr = xf_Error(xf_Alloc2((void ***) &L, nL, nbmax+1, sizeof(int)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate length of each node index
-	ierr = xf_Error(xf_Alloc((void **) &mb, nL, sizeof(int)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate coordinates.
-	ierr = xf_Error(xf_Alloc((void **) &xyN, nnqmax*dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate global coordinates at subdivision nodes
-	ierr = xf_Error(xf_Alloc((void **) &xyG, nnpmax*dim, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	// Allocate states at subdivision nodes
-	ierr = xf_Error(xf_Alloc((void **) &u0, nnpmax*sr, sizeof(real)));
-	if (ierr != xf_OK) return NULL;
-	
-	// Initialize cumulative counters.
-	ix = 0; iT = 0; iL = 0;
-	// Initialize data.
-	xn = NULL;
-	T0 = NULL;
-	L0 = NULL;
-	PhiQ = NULL;
-	PhiU = NULL;
-	// Get the total number of triangles and points.
-	for (egrp=0; egrp<nEGrp; egrp++) {
-		// Element group
-		EG = All->Mesh->ElemGroup[egrp];
-		// Geometry order and basis
-		QOrder = EG.QOrder;
-		// Previous order and basis
-		pPOrder = -1;
-		pUBasis = -1;
-		// Number of elements in group
-		nElem = EG.nElem;
-		
-		// Loop through elements
-		for (elem=0; elem<nElem; elem++) {
-			// Check if a vector group was specified.
-			if (UG != NULL) {
-				// Get interpolation order and basis.
-				xf_InterpOrderBasis(U, egrp, elem, &UOrder, &UBasis);
-				// Pull off the coefficients of the solution
-				EU = U->GenArray[egrp].rValue[elem];
-			} else {
-				// Reference values
-				UOrder = 0;
-				UBasis = 1;
-				// No state
-				EU = NULL;
-			}
-			
-			// Redetermine count if necessary.
-			if ((POrder != pPOrder) || (UBasis != pUBasis)) {
-				// Remember the most recent values.
-				pPOrder = POrder;
-				pUBasis = UBasis;
-				
-				// Number of geometry nodes
-				ierr = xf_Error(xf_Order2nNode(QBasis, QOrder, &nnq));
-				if (ierr != xf_OK) return NULL;
-				
-				// Determine nn = # unknowns for elements in this group.
-				ierr = xf_Error(xf_Order2nNode(UBasis, UOrder, &nnu));
-				if (ierr != xf_OK) return NULL;
-				
-				// Get the shape type (tris or tets, but just to be safe).
-				ierr = xf_Error(xf_Basis2Shape(QBasis, &QShape));
-				if (ierr != xf_OK) return NULL;
-	
-				// Set pointers.
-				xn = NULL;
-				T0 = NULL;
-				L0 = NULL;
-				// Get the element subdivision.
-				ierr = xf_Error(xf_GetRefineCoords(QShape, POrder, &nnp, &xn,
-					&nt, &T0, &nb, &L0));
-				if (ierr != xf_OK) return NULL;
-				
-				// Compute basis functions at Lagrange nodes.
-				ierr = xf_Error(xf_EvalBasis(UBasis, UOrder, xfe_False, nnp, xn,
-					xfb_Phi, &PhiU));
-				if (ierr != xf_OK) return NULL;
-				
-				// Compute basis functions at Lagrange nodes.
-				ierr = xf_Error(xf_EvalBasis(QBasis, QOrder, xfe_False, nnp, xn,
-					xfb_Phi, &PhiQ));
-				if (ierr != xf_OK) return NULL;
-			}
-			
-			// Geometry nodes
-			igN = EG.Node[elem];
-			// Reset element min/max coordinates.
-			for (d=0; d<dim; d++) {
-				xmin_i[d] = xmax[d]+1.0;
-				xmax_i[d] = xmin[d]-1.0;
-			}
-			// Loop through nodes.
-			for (i=0; i<nnq; i++) {	
-				// Loop through dimensions.
-				for (d=0; d<dim; d++) {
-					// Pull off node coordinates.
-					xyN[i*dim+d] = All->Mesh->Coord[igN[i]][d];
-					// Update element min/max coords
-					xmin_i[d] = min(xyN[i*dim+d], xmin_i[d]);
-					xmax_i[d] = max(xyN[i*dim+d], xmax_i[d]);
-				} // d
-			} // i
-			// Check if the element has a vertex in the range.
-			qLim = xfe_True;
-			for (d=0; d<dim; d++) {
-				qLim = qLim && xmax_i[d]>=xmin[d];
-				qLim = qLim && xmin_i[d]<=xmax[d];
-			}
-			// If not in the window, skip the element.
-			if (!qLim) continue;
-			
-			// Calculate global coordinates of subdivision nodes.
-			xf_MxM_Set(PhiQ->Phi, xyN, nnp, nnq, dim, xyG);
-			// Interpolate the state onto those nodes.
-			xf_MxM_Set(PhiU->Phi, EU, nnp, nnu, sr, u0);
-			
-			// Loop through subdivision nodes.
-			for (i=0; i<nnp; i++) {
-				for (d=0; d<dim; d++) {
-					// Coordinates of output nodes
-					X[ix+i][d] = xyG[i*dim+d];
-				}
-				for (k=0; k<sr; k++) {
-					// States
-					u[ix+i][k] = u0[i*sr+k];
-				}
-			}
-			
-			// Loop through the triangles.
-			for (i=0; i<nt; i++) {
-				for (k=0; k<dim+1; k++) {
-					T[iT+i][k] = T0[i*(dim+1)+k] + ix;
-				}
-			}
-			
-			// Loop through boundary lines.
-			for (i=0; i<nf; i++) {
-				// Save the number of nodes in this path.
-				mb[iL+i] = nb+1;
-				// Loop through nodes.
-				for (k=0; k<nb; k++) {
-					// Save the node indices.
-					L[iL+i][k] = L0[k] + ix;
-				} // k
-				// Save the first node as also the last.
-				L[iL+i][nb] = L0[0] + ix;
-			} // i
-			
-			// Add to the number of elements.
-			ix += nnp;
-			// Add to the number of triangles.
-			iT += nt;
-			// Add to the number of boundary lines.
-			iL += nf;
-		} // elem, element index 
-	} // i, GenArray (or ElementGroup) index
-	
-	// Number of nodes: output for Python
-	dims[0] = ix;
-	// Number of coordinates
-	dims[1] = dim;
-	// Build the coordinate array.
-	PyX = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, *X);
-	
-	// Number of states
-	dims[1] = sr;
-	// Build the state array.
-	PyU = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, *u);
-	
-	// Number of triangles
-	dims[0] = iT;
-	// Number of nodes per shape
-	dims[1] = dim+1;
-	// Build the triangulation.
-	PyT = PyArray_SimpleNewFromData(2, dims, NPY_INT, *T);
-	
-	// Create list of boundary nodes.
-	PyL = PyList_New(nL);
-	// Loop through boundary lines.
-	for (i=0; i<nL; i++) {
-		// Number of points in L[i]
-		dims[0] = mb[i];
-		// Set item i to be a NumPy array from L.
-		PyList_SetItem(PyL, i, 
-			PyArray_SimpleNewFromData(1, dims, NPY_INT, L[i]));
-	} //i
-	
-	// Output
-	return Py_BuildValue("OOOO", PyX, PyU, PyT, PyL);
+  int ierr, dim, i, nn, nntotal, egrp, elem;
+  npy_intp pydim[3];
+  enum xfe_Bool Inside;
+  real xmin[xf_MAXDIM], xmax[xf_MAXDIM];
+  real *x, *y;
+  int psize, np;
+  int *c;
+  int csize, nc;
+  SubData ESD, FSD;
+  MeshPlotData MPD;
+  PyObject *py_x, *py_y, *py_c, *py_min, *py_max;
+  xf_Mesh *Mesh;
+
+  // Parse the inputs.
+  if (!PyArg_ParseTuple(args, "nOO", &Mesh, &py_min, &py_max))
+    return NULL;
+
+  dim = Mesh->Dim;
+
+  ierr = xf_Error(UnpackRealList(py_min, dim, xmin, xfe_True));
+  if (ierr != xf_OK) return NULL;
+
+  ierr = xf_Error(UnpackRealList(py_max, dim, xmax, xfe_True));
+  if (ierr != xf_OK) return NULL;
+
+  // Init the face and element data
+  ierr = xf_Error(InitMeshPlotData(&MPD));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(InitSubData(&ESD));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(InitSubData(&FSD));
+  if (ierr != xf_OK) return NULL;
+
+  x = y = NULL;
+  psize = 0;
+  np = 0;
+  c = NULL;
+  nc = 0;
+  csize = 0;
+  nn = 0;
+  for (egrp=0; egrp<Mesh->nElemGroup; egrp++){
+    for (elem=0; elem<Mesh->ElemGroup[egrp].nElem; elem++){
+      // check if element is inside window
+      ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 1e-2, &Inside));
+      if (ierr != xf_OK) return NULL;
+
+      if (!Inside) continue;
+
+      if (dim == 1){
+        ierr = xf_Error(MeshPlotData_1D(Mesh, egrp, elem, &FSD, &MPD));
+        if (ierr != xf_OK) return NULL;
+      }
+      else if (dim == 2){
+        ierr = xf_Error(MeshPlotData_2D(Mesh, egrp, elem, &FSD, &MPD));
+        if (ierr != xf_OK) return NULL;
+      }
+      else if (dim == 3){
+        ierr = xf_Error(MeshPlotData_3D(Mesh, egrp, elem, &ESD, &FSD, &MPD));
+        if (ierr != xf_OK) return NULL;
+      }
+      else return NULL;
+
+      // Add data
+      for(i=0, nntotal=0; i<MPD.nface; i++) nntotal += MPD.nn[i];
+
+      // reallocate x and y if necessary
+      if (psize < DIMP*(np+nntotal)){
+        // larger than necessary, hopefully reducing the number of reallocs
+        psize = 2*DIMP*(np+nntotal);
+        ierr = xf_Error(xf_ReAlloc((void **)&x, psize, sizeof(real)));
+        if (ierr != xf_OK) return NULL;
+        ierr = xf_Error(xf_ReAlloc((void **)&y, psize, sizeof(real)));
+        if (ierr != xf_OK) return NULL;
+      }
+
+      // node position data
+      for (i=0; i<nntotal; i++){
+        x[np+i] = MPD.x[DIMP*i];
+        y[np+i] = MPD.x[DIMP*i+1];
+      }
+      np += nntotal;
+
+      // reallocate connectivity data if necessary
+      if (csize < nc+MPD.nface){
+        // larger than necessary, hopefully reducing the number of reallocs
+        csize = 2*(nc+MPD.nface);
+        ierr = xf_Error(xf_ReAlloc((void **)&c, csize, sizeof(int)));
+        if (ierr != xf_OK) return NULL;
+      }
+
+      // connectivity data
+      for (i=0; i<MPD.nface; i++){
+        c[nc+i] = nn;
+        nn += MPD.nn[i];
+      }
+      nc += MPD.nface;
+
+    } // elem
+  } // egrp
+
+  // Trim
+  ierr = xf_Error(xf_ReAlloc((void **)&x, np, sizeof(real)));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(xf_ReAlloc((void **)&y, np, sizeof(real)));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(xf_ReAlloc((void **)&c, nc, sizeof(int)));
+  if (ierr != xf_OK) return NULL;
+
+  // Convert to python arrays
+  // positions
+  pydim[0] = np;
+  py_x = PyArray_SimpleNewFromData(1, pydim, NPY_DOUBLE, (void *)x);
+  py_y = PyArray_SimpleNewFromData(1, pydim, NPY_DOUBLE, (void *)y);
+  // connectivity
+  pydim[0] = nc;
+  py_c = PyArray_SimpleNewFromData(1, pydim, NPY_INT, (void *)c);
+
+  // clean up
+  ierr = xf_Error(DestroyMeshPlotData(&MPD));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(DestroySubData(&ESD));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(DestroySubData(&FSD));
+  if (ierr != xf_OK) return NULL;
+
+  return Py_BuildValue("OOO", py_x, py_y, py_c);
 }
 
-
-// Function to wrap xf_GetRefineCoords
-PyObject *
-px_GetRefineCoords(PyObject *self, PyObject *args)
+PyObject*
+px_ScalarPlotData(PyObject *self, PyObject *args)
 {
-	enum xfe_ShapeType Shape;
-	int ierr, p, dim;
-	int nnode, nsplit, nbound;
-	int *vsplit, *vbound;
-	real *coord;
-	npy_intp dims[2];
-	PyObject *X, *py_vsplit, *py_vbound;
-	
-	// Process arguments.
-	if (!PyArg_ParseTuple(args, "ii", &Shape, &p))
-		return NULL;
-	
-	// Number of dimensions
-	ierr = xf_Error(xf_Shape2Dim(Shape, &dim));
-	if (ierr != xf_OK) return NULL;
-	
-	// Initialize pointers.
-	coord = NULL;
-	vsplit = NULL;
-	vbound = NULL;
-	// Wrap xf_GetRefineCoords.
-	ierr = xf_Error(xf_GetRefineCoords(Shape, p, &nnode,
-		&coord, &nsplit, &vsplit, &nbound, &vbound));
-	if (ierr != xf_OK) return NULL;
-	
-	// Create NumPy arrays.
-	// Number of points
-	dims[0] = nnode;
-	dims[1] = dim;
-	// Create coordinate vector
-	X = PyArray_SimpleNewFromData(2, dims, NPY_DOUBLE, coord);
-	
-	// Number of subelements
-	dims[0] = nsplit;
-	dims[1] = dim+1;
-	// Create subelement vector
-	py_vsplit = PyArray_SimpleNewFromData(2, dims, NPY_INT, vsplit);
-	
-	// Number of subelement boundary edges/faces
-	dims[0] = nbound;
-	// Create subelement boundary vector
-	py_vbound = PyArray_SimpleNewFromData(1, dims, NPY_INT, vbound);
-	
-	// Output
-	return Py_BuildValue("OOO", X, py_vsplit, py_vbound);
+  int ierr, dim, egrp, elem, i;
+  real xmin[xf_MAXDIM], xmax[xf_MAXDIM];
+  npy_intp pydim[3];
+  PyObject *py_c, *py_tri, *py_x, *py_y, *py_scalar, *py_min, *py_max;
+  real *x, *y, *c;
+  int psize, np, *tri, ntri, trisize, csize;
+  enum xfe_Bool Inside;
+  char *ScalarName;
+  xf_Vector *U;
+  xf_Mesh *Mesh;
+  xf_EqnSet *EqnSet;
+  SubData ESD;
+  ScalarPlotData SPD;
+
+  // Parse the inputs.
+  if (!PyArg_ParseTuple(args, "nnnOOO", &U, &Mesh, &EqnSet, &py_scalar, &py_min, &py_max))
+    return NULL;
+
+  dim = Mesh->Dim;
+
+  ierr = xf_Error(UnpackRealList(py_min, dim, xmin, xfe_True));
+  if (ierr != xf_OK) return NULL;
+
+  ierr = xf_Error(UnpackRealList(py_max, dim, xmax, xfe_True));
+  if (ierr != xf_OK) return NULL;
+
+  // Call xf_EqnSetScalar or just use the first entry in the vector?
+  ScalarName = PyString_Check(py_scalar) ? PyString_AsString(py_scalar) : NULL;
+
+  ierr = xf_Error(InitScalarPlotData(EqnSet, &SPD));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(InitSubData(&ESD));
+  if (ierr != xf_OK) return NULL;
+
+  x = y = NULL;
+  psize = 0;
+  np = 0;
+  tri = NULL;
+  trisize = 0;
+  ntri = 0;
+  c = NULL;
+  csize = 0;
+  for (egrp=0; egrp<Mesh->nElemGroup; egrp++){
+    for (elem=0; elem<Mesh->ElemGroup[egrp].nElem; elem++){
+      // check if element is inside window
+      ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 1e-2, &Inside));
+      if (ierr != xf_OK) return NULL;
+
+      if (!Inside) continue;
+
+      if ((dim >= 1) && (dim < 3)){
+        // Simple in this case
+        ierr = xf_Error(FindElemSubData(Mesh, egrp, elem, NULL, &ESD));
+        if (ierr != xf_OK) return NULL;
+      }
+      else if (dim == 3){
+        // Harder, need to calculate the xref along the cut plane
+        ierr = xf_Error(ScalarPlotData_3D(U, Mesh, EqnSet, egrp, elem, &ESD));
+        if (ierr != xf_OK) return NULL;
+      }
+      else return NULL;
+
+      ierr = xf_Error(ScalarValues(U, Mesh, EqnSet, egrp, elem, ScalarName, &ESD, &SPD));
+      if (ierr != xf_OK) return NULL;
+
+      // reallocate x and y if necessary
+      if (psize < DIMP*(np+ESD.nnode)){
+        psize = 2*DIMP*(np+ESD.nnode);
+        ierr = xf_Error(xf_ReAlloc((void **)&x, psize, sizeof(real)));
+        if (ierr != xf_OK) return NULL;
+        ierr = xf_Error(xf_ReAlloc((void **)&y, psize, sizeof(real)));
+        if (ierr != xf_OK) return NULL;
+      }
+      // reallocate c if necessary
+      if (csize < np+ESD.nnode){
+        csize = 2*(np+ESD.nnode);
+        ierr = xf_Error(xf_ReAlloc((void **)&c, csize, sizeof(real)));
+        if (ierr != xf_OK) return NULL;
+      }
+
+      for (i=0; i<ESD.nnode; i++){
+        // node position data
+        x[np+i] = ESD.xglob[DIMP*i];
+        y[np+i] = ESD.xglob[DIMP*i+1];
+        // scalar values
+        c[np+i] = SPD.s[i];
+      }
+
+      // reallocate tri if necessary
+      if (trisize < TRINN*(ntri+ESD.nselem)){
+        trisize = 2*TRINN*(ntri+ESD.nselem);
+        ierr = xf_Error(xf_ReAlloc((void **)&tri, trisize, sizeof(real)));
+        if (ierr != xf_OK) return NULL;
+      }
+
+      // sub-triangle data
+      for (i=0; i<TRINN*ESD.nselem; i++)
+        tri[TRINN*ntri+i] = np+ESD.selem[i];
+      ntri += ESD.nselem;
+
+      np += ESD.nnode;
+
+    } // elem
+  } // egrp
+
+  // Trim
+  ierr = xf_Error(xf_ReAlloc((void **)&x, np, sizeof(real)));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(xf_ReAlloc((void **)&y, np, sizeof(real)));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(xf_ReAlloc((void **)&c, np, sizeof(real)));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(xf_ReAlloc((void **)&tri, TRINN*ntri, sizeof(int)));
+  if (ierr != xf_OK) return NULL;
+
+  // Convert to python arrays
+  // positions
+  pydim[0] = np;
+  py_x = PyArray_SimpleNewFromData(1, pydim, NPY_DOUBLE, (void *)x);
+  py_y = PyArray_SimpleNewFromData(1, pydim, NPY_DOUBLE, (void *)y);
+  // scalar (c)
+  pydim[0] = np;
+  py_c = PyArray_SimpleNewFromData(1, pydim, NPY_DOUBLE, (void *)c);
+  // triangles
+  pydim[0] = ntri;
+  pydim[1] = TRINN;
+  py_tri = PyArray_SimpleNewFromData(2, pydim, NPY_INT, (void *)tri);
+
+  ierr = xf_Error(DestroyScalarPlotData(&SPD));
+  if (ierr != xf_OK) return NULL;
+  ierr = xf_Error(DestroySubData(&ESD));
+  if (ierr != xf_OK) return NULL;
+
+  return Py_BuildValue("OOOO", py_x, py_y, py_tri, py_c);
 }
-
-
-

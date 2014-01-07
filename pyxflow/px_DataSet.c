@@ -3,10 +3,12 @@
 #define PY_ARRAY_UNIQUE_SYMBOL _pyxflow_ARRAY_API
 #define NO_IMPORT_ARRAY
 #include <numpy/arrayobject.h>
-#include <xf_AllStruct.h>
-#include <xf_All.h>
-#include <xf_Data.h>
-
+#include "xf_AllStruct.h"
+#include "xf_All.h"
+#include "xf_Data.h"
+#include "xf_ResidualStruct.h"
+#include "xf_State.h"
+#include "xf_Param.h"
 
 
 // Function to create an empty geom.
@@ -119,14 +121,13 @@ px_GetData(PyObject *self, PyObject *args)
 PyObject *
 px_GetVectorGroup(PyObject *self, PyObject *args)
 {
-	xf_VectorGroup *VG;
 	PyObject *V;
-	int i, nVector;
+	xf_VectorGroup *VG;
+        int i, nVector;
 	
 	// Parse the Python inputs.
-	if (!PyArg_ParseTuple(args, "n", &VG))
-		return NULL;
-	
+	if (!PyArg_ParseTuple(args, "n", &VG)) return NULL;
+
 	// Get the number of vectors.
 	nVector = VG->nVector;
 	// Make a list of pointers to xf_Vector objects.
@@ -136,9 +137,9 @@ px_GetVectorGroup(PyObject *self, PyObject *args)
 		// Set the pointer to V[i].
 		PyList_SetItem(V, (Py_ssize_t) i, Py_BuildValue("n", VG->Vector[i]));
 	}
-	
+
 	// Output: number of vectors and list of pointers
-	return Py_BuildValue("nO", nVector, V);
+	return Py_BuildValue("iO", nVector, V);
 }
 
 
@@ -193,11 +194,6 @@ px_GetVector(PyObject *self, PyObject *args)
 		}
 	}
 	
-	// Check the StateRank
-	if (V->StateRank == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "Vector state rank is NULL.");
-		return NULL;
-	}
 	// StateRank
 	StateRank = V->StateRank;
 	// Set the StateNames if appropriate.
@@ -217,6 +213,56 @@ px_GetVector(PyObject *self, PyObject *args)
 	
 	// Output
 	return Py_BuildValue("iOOOO", nArray, Order, Basis, StateName, GA);
+}
+
+
+// Function to return a vector from a group
+PyObject *
+px_GetVectorFromGroup(PyObject *self, PyObject *args)
+{
+        int ierr;
+        xf_VectorGroup *VG;
+        xf_Vector *V;
+        char *VRoleType;
+        enum xfe_VectorRoleType VRole;
+        
+        // Parse the Python input objects
+        if (!PyArg_ParseTuple(args, "ns", &VG, &VRoleType)) return NULL;
+
+        ierr = xf_Error(xf_Value2Enum(VRoleType, xfe_VectorRoleName, xfe_VectorRoleLast, (int *)&VRole));
+        if (ierr != xf_OK) return NULL;
+
+        ierr = xf_Error(xf_GetVectorFromGroup(VG, VRole, &V));
+        if (ierr != xf_OK) return NULL;
+
+        return Py_BuildValue("n", V);
+}
+
+// Return the primal state
+PyObject *
+px_GetPrimalState(PyObject *self, PyObject *args)
+{
+        int ierr, TimeIndex;
+        xf_All *All;
+        xf_Data *D;
+        xf_VectorGroup *UG;
+
+	// Get the pointer from Python.
+	if (!PyArg_ParseTuple(args, "ni", &All, &TimeIndex)) return NULL;
+
+        ierr = xf_FindPrimalState(All->DataSet, TimeIndex, &D, NULL);
+        if (ierr != xf_OK) return NULL;
+
+        // Quick sanity check and backward compatibility clause
+        if (D->Type == xfe_VectorGroup)
+                UG = (xf_VectorGroup *)D->Data;
+        else if (D->Type != xfe_Vector){
+                ierr = xf_Error(xf_WrapVectorInGroup(D->Data, &UG));
+                if (ierr != xf_OK) return NULL;
+        }
+        else return NULL;
+
+        return Py_BuildValue("n", (xf_VectorGroup *)D->Data);
 }
 
 

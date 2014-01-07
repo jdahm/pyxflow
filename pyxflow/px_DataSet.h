@@ -114,6 +114,41 @@ OUTPUTS:
 
 
 PyObject *
+px_GetVectorFromGroup(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Return an xf_Vector pointer from a group with a specific role
+  
+CALL:
+  V = px.GetVector(VG, VRole)
+  
+INPUTS:
+  VG    : pointer to xf_VectorGroup struct
+  VRole : vector role string
+  
+OUTPUTS:
+  V : pointer to xf_Vector
+*/
+
+PyObject *
+px_GetPrimalState(PyObject *self, PyObject *args);
+/*
+PURPOSE:
+  Returns a pointer to the primal state vector group
+  
+CALL:
+  UG = px.GetPrimalState(A, TimeIndex)
+  
+INPUTS:
+  A         : pointer to xf_All struct
+  TimeIndex : Time index
+  
+OUTPUTS:
+  UG : pointer to xf_VectorGroup
+*/
+
+
+PyObject *
 px_GetGenArray(PyObject *self, PyObject *args);
 /*
 PURPOSE:

@@ -3,47 +3,53 @@
 
 
 PyObject *
-px_PlotData(PyObject *self, PyObject *args);
+px_MeshPlotData(PyObject *self, PyObject *args);
 /*
 PURPOSE:
-  Calculate interpolated vector and mesh line coordinates
+  Calculates mesh data for plotting
 	
 CALL:
-  X, u, T, L = px.InterpVector(A, UG, xlim)
+  x, y, con = px.MeshPlotData(M, min, max)
 	
 INPUTS:
-  A    : pointer to xf_All structure
-  UG   : pointer to xf_VectorGroup structure
-  xlim : plot window, [xmin, xmax, ymin, ymax(, zmin, zmax)]
+  M   : pointer to xf_Mesh structure
+  min : [xmin, (ymin, zmin)]
+  max : [xmax, (ymax, zmax)]
 
 OUTPUTS:
-  X : NumPy array of spatial node coordinates
-  u : NumPy array of state values at each node
-  T : NumPy array of node indices for network of triangles
-  L : list of arrays of boundary nodes
+  x   : x-position of nodes [np]
+  y   : y-position of nodes [np]
+  con : connectivity data.  The positions are stored in {x,y}[C[f],
+        C[f+1]] for some face index f
 */
-
 
 PyObject *
-px_GetRefineCoords(PyObject *self, PyObject *args);
+px_ScalarPlotData(PyObject *self, PyObject *args);
 /*
 PURPOSE:
-  Wrapper for xf_GetRefineCoords
-
+  Calculates mesh data for plotting
+	
 CALL:
-  coord, vsplit, vbound =  px.GetRefineCoords(Shape, p)
-
+  x, y, tri, scalar = px.MeshPlotData(U, M, E, Name, min, max)
+	
 INPUTS:
-  Shape : shape reference integer
-  p     : order
+  U    : pointer to xf_Vector structure
+  M    : pointer to xf_Mesh structure
+  E    : pointer to xf_EqnSet structure
+  Name : name of scalar
+           if NULL and interpolated : interpolated and plots the
+             first component of the vector
+           if not interpolated : plots first entry in vector for
+             each element
+  min  : [xmin, (ymin, zmin)]
+  max  : [xmax, (ymax, zmax)]
 
 OUTPUTS:
-  coord  : 2D array of reference coordinates
-  vsplit : nodes of vertices of tris/tets
-  vbound : indices of boundary nodes
+  x      : x-position of nodes [np]
+  y      : y-position of nodes [np]
+  tri    : node indices for each triangle [np,3]
+  scalar : scalar value at each node
 */
-
-
 
 
 #endif

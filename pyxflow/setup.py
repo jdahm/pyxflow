@@ -18,9 +18,14 @@ xflow_home = config.get("xflow", "home")
 eqnset = config.get("xflow", "eqnset")
 # Additional libraries
 libstrs = config.get("xflow", "libs")
+cflagstrs = config.get("compiler", "cflags")
+cflags = [str(x) for x in json.loads(cflagstrs)]
+ldflagstrs = config.get("compiler", "ldflags")
+ldflags = [str(x) for x in json.loads(ldflagstrs)]
 extra_libs = [str(x) for x in json.loads(libstrs)]
 # Add the appropriate XFlow library to the list.
-libs = ["xfSerial", eqnset] + extra_libs
+libs = ["xfSerial"] + extra_libs
+
 
 # Assemble the information for the module
 _pyxflow = Extension("_pyxflow",
@@ -28,6 +33,9 @@ _pyxflow = Extension("_pyxflow",
     libraries = libs,
     library_dirs = [xflow_home+"/lib"],
     runtime_library_dirs = [xflow_home+"/lib"],
+    extra_compile_args = cflags,
+    extra_link_args = ldflags,
+    extra_objects = [xflow_home+"/build/src/xf_EqnSetHook.o"],
     sources = [
         "_pyxflowmodule.c",
         "px_Geom.c",

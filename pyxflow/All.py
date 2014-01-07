@@ -25,7 +25,7 @@ from pyxflow.Mesh import xf_Mesh
 # Geom
 from pyxflow.Geom import xf_Geom
 # DataSet
-from pyxflow.DataSet import xf_DataSet
+from pyxflow.DataSet import xf_DataSet, xf_VectorGroup, xf_Vector
 
 
 
@@ -47,7 +47,7 @@ class xf_All:
         """
         
         # Create an xf_All instance in memory
-        self._ptr = px.ReadAllInputFile(fname, True)
+        self._ptr = px.ReadAllBinary(fname, DefaultFlag)
 
         # Get pointers to all members
         (Mesh_ptr, Geom_ptr, DataSet_ptr, Param_ptr, 
@@ -62,7 +62,10 @@ class xf_All:
 
     def __del__(self):
         px.DestroyAll(self._ptr)
-        
+
+    def GetPrimalState(self, TimeIndex=0):
+        ptr = px.GetPrimalState(self._ptr, TimeIndex)
+        return xf_VectorGroup(ptr)
         
     def Plot(self, **kwargs):
         """
@@ -102,7 +105,7 @@ class xf_All:
         #  2013-09-29 @dalle   : First version
         
         # Create a plot object.
-        h_p = xf_Plot(self, **kwargs)
+        h_p = xf_Plot(All=self, **kwargs)
         
         # Output the handles.
         return h_p
@@ -139,11 +142,8 @@ class xf_Plot:
         
         # Produce the initial plot.
         self.Plot(All, **kwargs)
-        
-        
-        
-        
-        
+
+
     def Plot(self, All, xyrange=None, vgroup='State', scalar=None, **kwargs):
         """
         h_p = xf_Plot.Plot(All, xyrange=None, vgroup='State', scalar=None, **kwargs)
@@ -183,7 +183,7 @@ class xf_Plot:
         """
         # Versions:
         #  2013-09-29 @dalle   : First version
-        
+
         # Check for a DataSet
         if not (All.DataSet.nData >= 1):
             raise IndexError("No DataSet found.")
@@ -193,13 +193,13 @@ class xf_Plot:
         # This is for 2D right now!
         if All.Mesh.Dim != 2:
             raise NotImplementedError("3D plotting is not implemented.")
-        
+
         # Process dimension kwargs.
-        xmin = kwargs.get('xmin', None)
-        xmax = kwargs.get('xmax', None)
-        ymin = kwargs.get('ymin', None)
-        ymax = kwargs.get('ymax', None)
-        
+        xmin = kwargs.get('xmin')
+        xmax = kwargs.get('xmax')
+        ymin = kwargs.get('ymin')
+        ymax = kwargs.get('ymax')
+
         # Process the window for plotting.
         if xyrange is not None:
             # Don't override values directly specified.
@@ -224,8 +224,7 @@ class xf_Plot:
             UG = All.DataSet.Data[0].Data
         else:
             # Error
-            raise RuntimeError((
-                "Unrecognized DataSet title '%s'" % vgroup))
+            raise RuntimeError("Unrecognized DataSet title '{}'".format(vgroup))
         
         # Limits on plot window
         xlim = [xmin, xmax, ymin, ymax]
@@ -245,8 +244,15 @@ class xf_Plot:
         h_t = plt.tripcolor(X[:,0], X[:,1], T, M, shading='gouraud')
         
         # Save the figure and axis handles.
-        self.figure = plt.gcf()
-        self.axes = plt.gca()
+        if kwargs.get('figure') is not None:
+            self.figure = kwargs['figure']
+        else:
+            self.figure = plt.figure()
+
+        if kwargs.get('axes') is not None:
+            self.axes = kwargs['axes']
+        else:
+            self.axes = self.figure.gca()
         
         # Check for a grid.
         if kwargs.get('mesh', True) is True:
@@ -351,9 +357,11 @@ class xf_Plot:
         
         return None
         
-        
+    def Show(self):
+        self.figure.show()
+
     # Method to customize the colormap
-    def set_colormap(self, colorList):
+    def SetColorMap(self, colorList):
         """
         h_p.set_colormap(colorList)
         
