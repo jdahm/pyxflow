@@ -1,8 +1,9 @@
 #!/usr/bin/env python2
+from pyxflow.All import xf_All
 
-import pyxflow.pythonxflow as px
-
-M = px.CreateMesh("../examples/uniform_tri_q1_2.gri")
-print M
-print px.DestroyMesh(M)
+A = xf_All("/Users/jdahm/xflow/demo/naca_0.xfa")
+UG = A.GetPrimalState()
+U = UG.GetVector()
+M = A.Mesh
+M.Plot()
 

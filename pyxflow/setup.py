@@ -1,35 +1,36 @@
-
-# No shebang because build.py determines which python executable to use.
-
-# Packagess
+# Packages
 from distutils.core import setup, Extension
 import ConfigParser
 import json
 
-# Get a get/set type object.
+# Get a get/set type object
 config = ConfigParser.SafeConfigParser()
-# Read the configuration options.
-config.read("../PX_CONFIG")
+# Read the configuration options
+config.read("../config.cfg")
 
 # The most important parameter: path to XFlow
 xflow_home = config.get("xflow", "home")
-# Equation set to link...
-# This is static.
-eqnset = config.get("xflow", "eqnset")
-# Additional libraries
-libstrs = config.get("xflow", "libs")
+
+# Compiler and linker options
 cflagstrs = config.get("compiler", "cflags")
-cflags = [str(x) for x in json.loads(cflagstrs)]
-ldflagstrs = config.get("compiler", "ldflags")
-ldflags = [str(x) for x in json.loads(ldflagstrs)]
-extra_libs = [str(x) for x in json.loads(libstrs)]
-# Add the appropriate XFlow library to the list.
-libs = ["xfSerial"] + extra_libs
+cflags = [str(x) for x in cflagstrs.split(' ')]
+
+ldflagstrs = config.get("compiler", "rdynamic")
+ldflags = [str(x) for x in ldflagstrs.split(' ')]
+
+libstrs = config.get("xflow", "extra_libs")
+extra_libs = [str(x) for x in libstrs.split(' ')]
+
+includestrs = config.get("compiler", "include_dirs")
+include_dirs = [str(x) for x in includestrs.split(' ')]
+
+# Add the appropriate XFlow library to the list
+libs = ["xfSerial"]
 
 
 # Assemble the information for the module
 _pyxflow = Extension("_pyxflow",
-    include_dirs = [xflow_home+"/include"],
+    include_dirs = [xflow_home+"/include"]+include_dirs,
     libraries = libs,
     library_dirs = [xflow_home+"/lib"],
     runtime_library_dirs = [xflow_home+"/lib"],
@@ -44,7 +45,7 @@ _pyxflow = Extension("_pyxflow",
         "px_Plot.c",
         "px_All.c"])
 
-# Compile and link.
+# Compile and link
 setup(
     name = "python-xflow",
     version = "1.0",

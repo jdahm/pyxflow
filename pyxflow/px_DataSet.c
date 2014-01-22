@@ -223,7 +223,7 @@ px_GetVectorFromGroup(PyObject *self, PyObject *args)
         int ierr;
         xf_VectorGroup *VG;
         xf_Vector *V;
-        char *VRoleType;
+        const char *VRoleType;
         enum xfe_VectorRoleType VRole;
         
         // Parse the Python input objects

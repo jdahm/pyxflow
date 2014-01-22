@@ -1,19 +1,27 @@
 #!/usr/bin/env python2
 
+import os, ConfigParser
 import subprocess as sp
-import ConfigParser
-import shutil
+import shutil, glob
 
 config = ConfigParser.SafeConfigParser()
-config.read("../PX_CONFIG")
+config.read("../config.cfg")
 
 pythonexec = config.get("python", "exec")
+
+print "Building XFlow equation sets for python..."
+# Clean-up the existing build directory
+shutil.rmtree("build", ignore_errors=True)
+sp.call([pythonexec, "build.py"], cwd=os.getcwd()+"/lib")
 
 print "Executing setup..."
 sp.call([pythonexec, "setup.py", "build"])
 
 print "Moving the module into place..."
-libdir = "build/lib."+config.get("python", "arch")+"-"+config.get("python", "version")
+dirs = glob.glob("build/lib*")
+if len(dirs) > 1:
+    raise ValueError("More than one build directory found")
+libdir = dirs[0]
 lib = libdir+"/_pyxflow.so"
 shutil.move(lib, "./_pyxflow.so")
 

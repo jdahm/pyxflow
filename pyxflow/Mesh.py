@@ -131,12 +131,9 @@ class xf_Mesh:
             self.axes = self.figure.gca()
 
         x, y, c = px.MeshPlotData(self._ptr, xmin, xmax)
-        print c, x, y
-        s = []
+        s = [0]*(len(c)-1)
         for f in range(len(c)-1):
-            s.append( zip(x[c[f]:c[f+1]], y[c[f]:c[f+1]]) )
-            print s
-        print s
+            s[f] = zip(x[c[f]:c[f+1]], y[c[f]:c[f+1]])
 
         line_options = kwargs.get('line_options', {})
 

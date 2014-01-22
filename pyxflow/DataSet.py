@@ -157,8 +157,8 @@ class xf_VectorGroup:
         #self.V = V
         self.Vector = [xf_Vector(Vi) for Vi in V]
 
-    def GetVector(self, VectorRole):
-        _ptr = px.GetVectorFromGroup(self._ptr, VectorRole)
+    def GetVector(self, role="ElemState"):
+        _ptr = px.GetVectorFromGroup(self._ptr, role)
         return xf_Vector(_ptr)
      
 # ---- Class for xf_Vector ----

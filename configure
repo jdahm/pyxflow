@@ -14,7 +14,7 @@
 
 
 # Configuration file
-outfile="PX_CONFIG"
+outfile="config.cfg"
 
 # Script log file
 logfile="configure.log"
@@ -45,22 +45,6 @@ usage() {
     echo_t "  -python [ python | {python2} | python3 ]"
     echo_t "       Python executable name"
     echo_t "  "
-    echo_t "  -version [ {2.7} | 2.6 | version-number ]"
-    echo_t "       Python version to use"
-    echo_t "  "
-    echo_t "  -arch [ {linux-x86_64} | linux-i686 ]"
-    echo_t "       Architecture, according to python."
-    echo_t "       It should be possible to make this auto-detected"
-    echo_t "  "
-    echo_t "  -eqnset [ {CompressibleNS} | Scalar | Acoustics ]"
-    echo_t "       Name of XFlow library to link"
-    echo_t "  "
-    echo_t "  -nolapack"
-    echo_t "       Disable LAPACK"
-    echo_t "  "
-    echo_t "  -noblas"
-    echo_t "       Disable BLAS"
-    echo_t "  "
     echo_t "  -help | -h"
     echo_t "       Display this guide and exit"
     echo_t "  "
@@ -70,12 +54,8 @@ usage() {
     echo_t "  The most basic call will use all the defaults."
     echo_t "     \$ ./configure"
     echo_t "  "
-    echo_t "  The following disables BLAS and LAPACK and uses a different"
-    echo_t "  location for the XFlow folders."
-    echo_t "     \$ ./configure -noblas -nolapack -xflow ~/usr/local/xflow"
-    echo_t "  "
-    echo_t "  On 32-bit systems, it will be necessary to use the following."
-    echo_t "     \$ ./configure -arch linux-i686"
+    echo_t "  Picking the version of XFlow and Python."
+    echo_t "     \$ ./configure -xflow ${HOME}/path/to/xflow -python /usr/local/bin/python2.7"
     echo_t "  "
 }
 
@@ -90,14 +70,17 @@ unknown_option() {
     exit_fail
 }
 
+get_option() {
+    grep $2 $1 | awk -F'=' '{ print $2 }' | sed -e 's/^ *//g' -e 's/ *$//g'
+}
+
+get_python_ver() {
+    $1 --version 2>&1 | awk '{ print $2 }' | cut -d. -f1-2
+}
+
 # Set default options.
 xflow_home="$HOME/xflow"
 python_exec="python2"
-python_ver="2.7"
-sys_arch="linux-x86_64"
-eqnset="CompressibleNS"
-flapack="true"
-fblas="true"
 
 # Clear the old logfile and touch it
 if [[ -e $logfile ]]; then
@@ -137,11 +120,6 @@ while [[ $1 ]]; do
 	    python_exec="$1"
 	    shift
 	    ;;
-	-version | --version )
-	    shift
-	    python_ver="$1"
-	    shift
-	    ;;
 	-arch | --arch )
 	    shift
 	    sys_arch="$1"
@@ -170,56 +148,27 @@ while [[ $1 ]]; do
     esac
 done
 
+# Get python version
+python_ver=$(get_python_ver $python_exec)
+
+# Compiler options
+cc=$(get_option $xflow_home/XF_CONFIG CC)
+cflags=$(get_option $xflow_home/XF_CONFIG CFLAGS)
+rdynamic=$(get_option $xflow_home/XF_CONFIG RDYNAMIC)
+
 # Inform user of options
 echo_t "  Configuration settings"
 echo_t "  * Operating system is $os"
-echo_t "  * Architecture is $sys_arch"
-echo_t "  * Python version is $python_ver"
-echo_t "  * XFlow path is $xflow_home"
-echo_t "  * Equation set is $eqnset"
 newline
-
-
-# Check for the XFlow binary.
-if ! [ -f "$xflow_home/bin/xflow" ]; then
-    echo_t "XFlow binary could not be found!"
-    echo_t "Attempted to find it at:"
-    echo_t "   $xflow_home/bin/xflow"
-    newline
-    exit_fail
-fi
-
-# Check for the XFlow library.
-if ! [ -f "$xflow_home/lib/lib$eqnset.so" ]; then
-    echo_t "XFlow library could not be found!"
-    echo_t "Attempted to find it at:"
-    echo_t "   $xflow_home/lib/lib$eqnset.so"
-    newline
-    exit_fail
-fi
-
-# Assemble a variable for the list of libraries.
-if [ "$fblas" != "false" ]; then
-    if [ "$flapack" != "false" ]; then
-        # Both libraries
-        libs='["blas", "lapack"]'
-    else
-        # Just BLAS
-        libs='["blas"]'
-    fi
-elif [ "$flapack" != "false" ]; then
-    # Just LAPACK
-    libs='["lapack"]'
-else
-    # Niether
-    libs='[]'
-fi
-
-# compiler options
-cflags='["-Wall", "-Wno-unused-function", "-Wno-unused-variable", "-Wno-unused-but-set-variable", "-Wno-parentheses", "-Wno-format", "-Werror-implicit-function-declaration", "-g"]'
-
-ldflags='["-Wl,--export-dynamic"]'
-
+echo_t "  * Python version is $python_ver"
+newline
+echo_t "  * XFlow path is $xflow_home"
+newline
+echo_t "  * Compiler is $cc"
+echo_t "  * CFLAGS = $cflags"
+echo_t "  * LDFLAGS = $rdynamic"
+newline
+echo_t
 # Start writing configuration file
 cat > $outfile <<EOF
 [python]
@@ -229,10 +178,11 @@ arch = $sys_arch
 
 [xflow]
 home = $xflow_home
-eqnset = $eqnset
-libs = $libs
+extra_libs =
 
 [compiler]
+cc = $cc
 cflags = $cflags
-ldflags = $ldflags
+rdynamic = $rdynamic
+include_dirs = $include_dirs
 EOF

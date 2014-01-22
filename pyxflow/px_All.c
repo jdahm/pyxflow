@@ -4,6 +4,25 @@
 #include "xf_EqnSetHook.h"
 #include <dlfcn.h>
 
+static int
+LoadEqnSet(const xf_EqnSet *EqnSet){
+	int ierr;
+	char px[] = "px";
+	char lib[xf_MAXSTRLEN];
+
+	/* Copy 'lib' into lib string */
+	strncpy(lib, EqnSet->EqnSetLibrary, 3);
+	/* Copy 'px' into lib string */
+	strncpy(lib+3, px, 2);
+	/* Copy rest of original library into lib string */
+	strcpy(lib+5, EqnSet->EqnSetLibrary+3);
+
+	ierr = xf_LoadEqnSetLibrary(lib);
+	if (ierr != xf_OK) return ierr;
+
+	return xf_OK;
+}
+
 PyObject *
 px_CreateAll(PyObject *self, PyObject *args)
 {
@@ -75,8 +94,8 @@ px_ReadAllBinary(PyObject *self, PyObject *args)
 	ierr = xf_Error(xf_ReadAllBinary(XfaFile, All));
 	if (ierr != xf_OK) return NULL;
 
-        ierr = xf_LoadEqnSetLibrary(All->EqnSet->EqnSetLibrary);
-        if (ierr != xf_OK) return NULL;
+	ierr = xf_Error(LoadEqnSet(All->EqnSet));
+	if (ierr != xf_OK) return NULL;
 
         ierr = xf_Error(xf_EqnSetRegister(All->EqnSet));
         if (ierr != xf_OK) return NULL;

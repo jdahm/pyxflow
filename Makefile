@@ -4,7 +4,7 @@ SHELL = /bin/sh
 TOPDIR = .
 # Source directory
 BUILDDIR = pyxflow
-
+EQNDIR = $(BUILDDIR)/lib
 all: build
 
 .PHONY: build
@@ -13,4 +13,5 @@ build:
 
 .PHONY: clean
 clean:
+	(cd $(
 	(cd $(BUILDDIR); rm _pyxflow.so)
