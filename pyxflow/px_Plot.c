@@ -33,6 +33,7 @@ typedef struct {
     enum xfe_ShapeType Shape; // shape
     enum xfe_BasisType Basis; // basis
     int Order; // basis order
+    int Face; // local face number (if subdividing faces)
     xf_BasisData *PhiData; // basis data
 } SubData;
 
@@ -51,6 +52,7 @@ InitSubData(SubData *SD)
     SD->Shape = xfe_ShapeLast;
     SD->Basis = xfe_BasisLast;
     SD->Order = -1;
+    SD->Face = -1;
     SD->PhiData = NULL;
 
     return xf_OK;
@@ -147,10 +149,11 @@ FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubDat
     SD->PointsChanged = xfe_False;
 
     // Do we need to recalculate?
-    if ((Shape != SD->Shape) || (Order != SD->Order)) {
+    if ((Shape != SD->Shape) || (Order != SD->Order) || (face != SD->Face)) {
         SD->PointsChanged = xfe_True;
         SD->Shape = Shape;
         SD->Order = Order;
+        SD->Face = face;
 
         pnn = SD->nnode;
 
@@ -353,7 +356,7 @@ MeshPlotData_1D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *M
 }
 
 static int
-MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *MPD)
+MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *FSD, MeshPlotData *MPD)
 {
     int ierr, nface, face, nn, i, f, ibfgrp;
     enum xfe_Bool OnLeft;
@@ -391,7 +394,7 @@ MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *M
 
         if (!OnLeft) continue;
 
-        ierr = xf_Error(FindFaceSubData(Mesh, ibfgrp, Face.Number, NULL, FSD));
+        ierr = xf_Error(FindFaceSubData(Mesh, ibfgrp, Face.Number, pOrder, FSD));
 
         if (ierr != xf_OK) return ierr;
 
@@ -421,7 +424,7 @@ MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *M
 }
 
 static int
-MeshPlotData_3D(xf_Mesh *Mesh, int egrp, int elem, SubData *ESD, SubData *FSD, MeshPlotData *MPD)
+MeshPlotData_3D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *ESD, SubData *FSD, MeshPlotData *MPD)
 {
     return xf_NOT_SUPPORTED;
 }
@@ -553,8 +556,6 @@ ScalarValues(xf_Vector *U, xf_Mesh *Mesh, xf_EqnSet *EqnSet, int egrp, int elem,
 
         // values
         xf_MxM_Set(SPD->BD->Phi, EU, nq, nn, sr, SPD->U);
-        //for (i=0; i<nn*sr; i++) xf_printf("%.3f\n", EU[i]);
-        for (i=0; i<nq*sr; i++) xf_printf("%.3f\n", SPD->U[i]);
         
         if (Name != NULL) {
             // element Jacobian det and inv at points (only 1 if J is const)
@@ -594,9 +595,9 @@ PyObject*
 px_MeshPlotData(PyObject *self, PyObject *args)
 {
     int ierr, dim, i, nn, nntotal, egrp, elem;
-    int Order;
+    int Order, *pOrder;
     npy_intp pydim[3];
-    enum xfe_Bool FixedOrder, Inside;
+    enum xfe_Bool Inside;
     real xmin[xf_MAXDIM], xmax[xf_MAXDIM];
     real *x, *y;
     int psize, np;
@@ -621,9 +622,13 @@ px_MeshPlotData(PyObject *self, PyObject *args)
 
     if (ierr != xf_OK) return NULL;
 
-    FixedOrder = PyInt_Check(py_order);
-    if (FixedOrder)
+    if (PyInt_Check(py_order)){
         Order = (int) PyInt_AsLong(py_order);
+        pOrder = &Order;
+    }
+    else{
+        pOrder= NULL;
+    }
 
     // Init the face and element data
     ierr = xf_Error(InitMeshPlotData(&MPD));
@@ -660,11 +665,11 @@ px_MeshPlotData(PyObject *self, PyObject *args)
 
                 if (ierr != xf_OK) return NULL;
             } else if (dim == 2) {
-                ierr = xf_Error(MeshPlotData_2D(Mesh, egrp, elem, &FSD, &MPD));
+                ierr = xf_Error(MeshPlotData_2D(Mesh, egrp, elem, pOrder, &FSD, &MPD));
 
                 if (ierr != xf_OK) return NULL;
             } else if (dim == 3) {
-                ierr = xf_Error(MeshPlotData_3D(Mesh, egrp, elem, &ESD, &FSD, &MPD));
+                ierr = xf_Error(MeshPlotData_3D(Mesh, egrp, elem, pOrder, &ESD, &FSD, &MPD));
 
                 if (ierr != xf_OK) return NULL;
             } else return NULL;
@@ -673,9 +678,9 @@ px_MeshPlotData(PyObject *self, PyObject *args)
             for(i = 0, nntotal = 0; i < MPD.nface; i++) nntotal += MPD.nn[i];
 
             // reallocate x and y if necessary
-            if (psize < DIMP * (np + nntotal)) {
+            if (psize < (np + nntotal)) {
                 // larger than necessary, hopefully reducing the number of reallocs
-                psize = 2 * DIMP * (np + nntotal);
+                psize = 2 * (np + nntotal);
                 ierr = xf_Error(xf_ReAlloc((void **)&x, psize, sizeof(real)));
 
                 if (ierr != xf_OK) return NULL;
@@ -694,7 +699,7 @@ px_MeshPlotData(PyObject *self, PyObject *args)
             np += nntotal;
 
             // reallocate connectivity data if necessary
-            if (csize < nc + MPD.nface) {
+            if (csize < (nc + MPD.nface)) {
                 // larger than necessary, hopefully reducing the number of reallocs
                 csize = 2 * (nc + MPD.nface);
                 ierr = xf_Error(xf_ReAlloc((void **)&c, csize, sizeof(int)));

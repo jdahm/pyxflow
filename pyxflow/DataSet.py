@@ -233,16 +233,14 @@ class xf_Vector:
 
         Name = kwargs.get('scalar')
 
+        colormap = kwargs.get('colormap', plt.cm.jet)
+
         x, y, tri, scalar = px.ScalarPlotData(
             self._ptr, Mesh._ptr, EqnSet._ptr, Name, xmin, xmax, Order)
 
         if dim > 1:
             T = Triangulation(x, y, triangles=tri)
-            print tri
-            print np.asarray(x), np.asarray(y)
-            print np.asarray(scalar)
-            self.axes.set_aspect('equal')
-            p = self.axes.tripcolor(T, scalar, shading='gouraud', cmap=plt.cm.rainbow)
+            p = self.axes.tripcolor(T, scalar, shading='gouraud', cmap=colormap)
             self.figure.colorbar(p)
         else:
             self.axes.plot(x, scalar)

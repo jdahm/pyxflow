@@ -133,12 +133,12 @@ class xf_Mesh:
         else:
             self.axes = self.figure.gca()
 
-        order = kwargs.get('order')
+        Order = kwargs.get('order')
 
-        x, y, c = px.MeshPlotData(self._ptr, xmin, xmax, order)
-        s = [0] * (len(c) - 1)
+        x, y, c = px.MeshPlotData(self._ptr, xmin, xmax, Order)
+        s = []
         for f in range(len(c) - 1):
-            s[f] = zip(x[c[f]:c[f + 1]], y[c[f]:c[f + 1]])
+            s.append(zip(x[c[f]:c[f + 1]], y[c[f]:c[f + 1]]))
 
         line_options = kwargs.get('line_options', {})
 
@@ -149,7 +149,7 @@ class xf_Mesh:
             self.axes.set_xlim(xmin[0], xmax[0])
             self.axes.set_ylim(xmin[1], xmax[1])
 
-        return f
+        return self.figure
 
 
 # --- Class for boundary face groups ---
