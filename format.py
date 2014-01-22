@@ -49,7 +49,8 @@ def format_pyxflow():
 
 def clean_pyxflow():
     files = glob.glob("*.orig") + glob.glob("*~") + \
-        glob.glob("pyxflow/*.orig") + glob.glob("pyxflow/*~")
+        glob.glob("pyxflow/*.orig") + glob.glob("pyxflow/*~") + \
+        glob.glob("pyxflow/lib/*~")
     for f in files:
         print "Removing {}".format(f)
         os.remove(f)
