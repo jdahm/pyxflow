@@ -3,15 +3,18 @@ SHELL = /bin/sh
 # Top-level directory
 TOPDIR = .
 # Source directory
-BUILDDIR = pyxflow
-EQNDIR = $(BUILDDIR)/lib
+MODULEDIR = pyxflow
+EQNDIR = $(MODULEDIR)/lib
 all: build
 
 .PHONY: build
 build:
-	(cd $(BUILDDIR); ./build.py)
+	(cd $(MODULEDIR); ./build.py)
+
+.PHONY: style
+style:
+	(cd $(MODULEDIR); make style)
 
 .PHONY: clean
 clean:
-	(cd $(
-	(cd $(BUILDDIR); rm _pyxflow.so)
+	(cd $(MODULEDIR); rm _pyxflow.so)
