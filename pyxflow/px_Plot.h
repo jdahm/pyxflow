@@ -9,12 +9,13 @@ px_MeshPlotData(PyObject *self, PyObject *args);
     Calculates mesh data for plotting
 
     CALL:
-    x, y, con = px.MeshPlotData(M, min, max)
+    x, y, con = px.MeshPlotData(M, min, max, order)
 
     INPUTS:
     M   : pointer to xf_Mesh structure
     min : [xmin, (ymin, zmin)]
     max : [xmax, (ymax, zmax)]
+    orer : plot order (optional)
 
     OUTPUTS:
     x   : x-position of nodes [np]
@@ -30,7 +31,7 @@ px_ScalarPlotData(PyObject *self, PyObject *args);
     Calculates mesh data for plotting
 
     CALL:
-    x, y, tri, scalar = px.MeshPlotData(U, M, E, Name, min, max)
+    x, y, tri, scalar = px.MeshPlotData(U, M, E, Name, min, max, order)
 
     INPUTS:
     U    : pointer to xf_Vector structure
@@ -43,6 +44,7 @@ px_ScalarPlotData(PyObject *self, PyObject *args);
              each element
     min  : [xmin, (ymin, zmin)]
     max  : [xmax, (ymax, zmax)]
+    orer : plot order (optional)
 
     OUTPUTS:
     x      : x-position of nodes [np]

@@ -1,9 +1,6 @@
 #include <Python.h>
 
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#define PY_ARRAY_UNIQUE_SYMBOL _pyxflow_ARRAY_API
-#define NO_IMPORT_ARRAY
-#include <numpy/arrayobject.h>
+#include "px_NumPy.h"
 
 #include "xf_AllStruct.h"
 #include "xf_ResidualStruct.h"
@@ -88,7 +85,7 @@ FindElemSubData(xf_Mesh *Mesh, int egrp, int elem, const int *pOrder, SubData *S
     QOrder = Mesh->ElemGroup[egrp].QOrder;
     QBasis = Mesh->ElemGroup[egrp].QBasis;
 
-    Order = ((pOrder != NULL) ? (*pOrder) : QOrder);
+    Order = ((pOrder != NULL) ? (*pOrder) : 2*QOrder+1);
 
     ierr = xf_Error(xf_Basis2Shape(QBasis, &Shape));
 
@@ -99,6 +96,8 @@ FindElemSubData(xf_Mesh *Mesh, int egrp, int elem, const int *pOrder, SubData *S
     // Do we need to recalculate?
     if ((Shape != SD->Shape) || (Order != SD->Order)) {
         SD->PointsChanged = xfe_True;
+        SD->Shape = Shape;
+        SD->Order = Order;
 
         pnn = SD->nnode;
 
@@ -139,7 +138,7 @@ FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubDat
     QOrder = Mesh->ElemGroup[egrp].QOrder;
     QBasis = Mesh->ElemGroup[egrp].QBasis;
 
-    Order = ((pOrder != NULL) ? (*pOrder) : QOrder);
+    Order = ((pOrder != NULL) ? (*pOrder) : 2*QOrder+1);
 
     ierr = xf_Error(xf_Basis2Shape(QBasis, &Shape));
 
@@ -150,6 +149,8 @@ FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubDat
     // Do we need to recalculate?
     if ((Shape != SD->Shape) || (Order != SD->Order)) {
         SD->PointsChanged = xfe_True;
+        SD->Shape = Shape;
+        SD->Order = Order;
 
         pnn = SD->nnode;
 
@@ -246,10 +247,8 @@ UnpackRealList(PyObject *PyL, int n, real *l, enum xfe_Bool fit)
     }
 
     // Unpack
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
         l[i] = (real) PyFloat_AsDouble(PyList_GetItem(PyL, i));
-        // l[i] = (real) PyList_GetItem(PyL,i);
-    }
 
     return xf_OK;
 }
@@ -507,7 +506,7 @@ ScalarValues(xf_Vector *U, xf_Mesh *Mesh, xf_EqnSet *EqnSet, int egrp, int elem,
     real *EU;
 
     dim = Mesh->Dim;
-    sr = EqnSet->StateRank;
+    sr = U->StateRank;
 
     nq = ESD->nnode;
 
@@ -542,7 +541,7 @@ ScalarValues(xf_Vector *U, xf_Mesh *Mesh, xf_EqnSet *EqnSet, int egrp, int elem,
     if (Interpolated) {
         xf_InterpOrderBasis(U, egrp, elem, &Order, &Basis);
 
-        ierr = xf_Error(xf_Order2nNode(Order, Basis, &nn));
+        ierr = xf_Error(xf_Order2nNode(Basis, Order, &nn));
 
         if (ierr != xf_OK) return ierr;
 
@@ -553,8 +552,10 @@ ScalarValues(xf_Vector *U, xf_Mesh *Mesh, xf_EqnSet *EqnSet, int egrp, int elem,
         if (ierr != xf_OK) return ierr;
 
         // values
-        xf_MxV_Set(SPD->BD->Phi, EU, nq, nn, SPD->U);
-
+        xf_MxM_Set(SPD->BD->Phi, EU, nq, nn, sr, SPD->U);
+        //for (i=0; i<nn*sr; i++) xf_printf("%.3f\n", EU[i]);
+        for (i=0; i<nq*sr; i++) xf_printf("%.3f\n", SPD->U[i]);
+        
         if (Name != NULL) {
             // element Jacobian det and inv at points (only 1 if J is const)
             ierr = xf_Error(xf_ElemJacobian(Mesh, egrp, elem, ESD->nnode, ESD->xref, xfb_detJ | xfb_iJ,
@@ -593,8 +594,9 @@ PyObject*
 px_MeshPlotData(PyObject *self, PyObject *args)
 {
     int ierr, dim, i, nn, nntotal, egrp, elem;
+    int Order;
     npy_intp pydim[3];
-    enum xfe_Bool Inside;
+    enum xfe_Bool FixedOrder, Inside;
     real xmin[xf_MAXDIM], xmax[xf_MAXDIM];
     real *x, *y;
     int psize, np;
@@ -602,11 +604,11 @@ px_MeshPlotData(PyObject *self, PyObject *args)
     int csize, nc;
     SubData ESD, FSD;
     MeshPlotData MPD;
-    PyObject *py_x, *py_y, *py_c, *py_min, *py_max;
+    PyObject *py_x, *py_y, *py_c, *py_min, *py_max, *py_order;
     xf_Mesh *Mesh;
 
     // Parse the inputs.
-    if (!PyArg_ParseTuple(args, "nOO", &Mesh, &py_min, &py_max))
+    if (!PyArg_ParseTuple(args, "nOOO", &Mesh, &py_min, &py_max, &py_order))
         return NULL;
 
     dim = Mesh->Dim;
@@ -618,6 +620,10 @@ px_MeshPlotData(PyObject *self, PyObject *args)
     ierr = xf_Error(UnpackRealList(py_max, dim, xmax, xfe_True));
 
     if (ierr != xf_OK) return NULL;
+
+    FixedOrder = PyInt_Check(py_order);
+    if (FixedOrder)
+        Order = (int) PyInt_AsLong(py_order);
 
     // Init the face and element data
     ierr = xf_Error(InitMeshPlotData(&MPD));
@@ -643,7 +649,7 @@ px_MeshPlotData(PyObject *self, PyObject *args)
     for (egrp = 0; egrp < Mesh->nElemGroup; egrp++) {
         for (elem = 0; elem < Mesh->ElemGroup[egrp].nElem; elem++) {
             // check if element is inside window
-            ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 1e-2, &Inside));
+            ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 0.5, &Inside));
 
             if (ierr != xf_OK) return NULL;
 
@@ -749,12 +755,13 @@ PyObject*
 px_ScalarPlotData(PyObject *self, PyObject *args)
 {
     int ierr, dim, egrp, elem, i;
+    int QOrder, UOrder, Order;
+    enum xfe_Bool FixedOrder, Inside;
     real xmin[xf_MAXDIM], xmax[xf_MAXDIM];
     npy_intp pydim[3];
-    PyObject *py_c, *py_tri, *py_x, *py_y, *py_scalar, *py_min, *py_max;
+    PyObject *py_c, *py_tri, *py_x, *py_y, *py_scalar, *py_min, *py_max, *py_order;
     real *x, *y, *c;
     int psize, np, *tri, ntri, trisize, csize;
-    enum xfe_Bool Inside;
     char *ScalarName;
     xf_Vector *U;
     xf_Mesh *Mesh;
@@ -763,7 +770,7 @@ px_ScalarPlotData(PyObject *self, PyObject *args)
     ScalarPlotData SPD;
 
     // Parse the inputs.
-    if (!PyArg_ParseTuple(args, "nnnOOO", &U, &Mesh, &EqnSet, &py_scalar, &py_min, &py_max))
+    if (!PyArg_ParseTuple(args, "nnnOOOO", &U, &Mesh, &EqnSet, &py_scalar, &py_min, &py_max, &py_order))
         return NULL;
 
     dim = Mesh->Dim;
@@ -778,6 +785,11 @@ px_ScalarPlotData(PyObject *self, PyObject *args)
 
     // Call xf_EqnSetScalar or just use the first entry in the vector?
     ScalarName = PyString_Check(py_scalar) ? PyString_AsString(py_scalar) : NULL;
+
+    // Was the requested plot order passed?
+    FixedOrder = PyInt_Check(py_order);
+    if (FixedOrder)
+        Order = (int) PyInt_AsLong(py_order);
 
     ierr = xf_Error(InitScalarPlotData(EqnSet, &SPD));
 
@@ -797,9 +809,10 @@ px_ScalarPlotData(PyObject *self, PyObject *args)
     csize = 0;
 
     for (egrp = 0; egrp < Mesh->nElemGroup; egrp++) {
+        QOrder = Mesh->ElemGroup[egrp].QOrder;
         for (elem = 0; elem < Mesh->ElemGroup[egrp].nElem; elem++) {
             // check if element is inside window
-            ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 1e-2, &Inside));
+            ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 0.5, &Inside));
 
             if (ierr != xf_OK) return NULL;
 
@@ -807,7 +820,11 @@ px_ScalarPlotData(PyObject *self, PyObject *args)
 
             if ((dim >= 1) && (dim < 3)) {
                 // Simple in this case
-                ierr = xf_Error(FindElemSubData(Mesh, egrp, elem, NULL, &ESD));
+                if (!FixedOrder){
+                    UOrder = xf_InterpOrder(U, egrp, elem);
+                    Order = 3 * max(QOrder, UOrder) + 1;
+                }
+                ierr = xf_Error(FindElemSubData(Mesh, egrp, elem, &Order, &ESD));
 
                 if (ierr != xf_OK) return NULL;
             } else if (dim == 3) {

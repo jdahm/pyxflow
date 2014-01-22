@@ -5,10 +5,12 @@
 #include "px_Plot.h"
 #include "px_All.h"
 
-// Steps to import the NumPy API
+// Need this to start NumPy C-API
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #define PY_ARRAY_UNIQUE_SYMBOL _pyxflow_ARRAY_API
 #include <numpy/arrayobject.h>
+
+#include "px_NumPy.h"
 
 static PyMethodDef Methods[] = {
 	// xf_Mesh methods
