@@ -27,10 +27,15 @@ include_dirs = [str(x) for x in includestrs.split(' ')]
 # Add the appropriate XFlow library to the list
 libs = ["xfSerial"]
 
+# Add xflow to the include_dirs (avoids having empty strings).
+if include_dirs == ['']:
+	include_dirs = [xflow_home+"/include"]
+else:
+	include_dirs = [xflow_home+"/include"] + include_dirs
 
 # Assemble the information for the module
 _pyxflow = Extension("_pyxflow",
-    include_dirs = [xflow_home+"/include"]+include_dirs,
+    include_dirs = include_dirs,
     libraries = libs,
     library_dirs = [xflow_home+"/lib"],
     runtime_library_dirs = [xflow_home+"/lib"],
