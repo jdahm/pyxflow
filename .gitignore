@@ -3,11 +3,11 @@
 *.swp
 
 build/
-PX_CONFIG
 configure.log
 
 *.so
 *.o
+*.orig
 
 __pycache__/
 _test*

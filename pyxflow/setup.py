@@ -52,7 +52,7 @@ _pyxflow = Extension("_pyxflow",
 
 # Compile and link
 setup(
-    name = "python-xflow",
-    version = "1.0",
-    description = "This package is a python interface for xflow",
-    ext_modules = [_pyxflow])
+    name="python-xflow",
+    version="1.0",
+    description="This package is a python interface for xflow",
+    ext_modules=[_pyxflow])
