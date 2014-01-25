@@ -11,11 +11,11 @@ LoadEqnSet(const xf_EqnSet *EqnSet)
     char px[] = "px";
     char lib[xf_MAXSTRLEN];
 
-    /* Copy 'lib' into lib string */
+    // Copy 'lib' into lib string.
     strncpy(lib, EqnSet->EqnSetLibrary, 3);
-    /* Copy 'px' into lib string */
+    // Copy 'px' into lib string.
     strncpy(lib + 3, px, 2);
-    /* Copy rest of original library into lib string */
+    // Copy rest of original library into lib string .
     strcpy(lib + 5, EqnSet->EqnSetLibrary + 3);
 
     ierr = xf_LoadEqnSetLibrary(lib);
@@ -90,26 +90,26 @@ px_ReadAllBinary(PyObject *self, PyObject *args)
     char *XfaFile;
     xf_All *All = NULL;
 
+    // Process python inputs.
     if (!PyArg_ParseTuple(args, "sb", &XfaFile, &DefaultFlag)) return NULL;
 
-    // Create and read in the xf_All struct from file
+    // Create and read in the xf_All struct from file.
     ierr = xf_Error(xf_CreateAll(&All, DefaultFlag));
-
     if (ierr != xf_OK) return NULL;
 
+    // Use the xflow command to read a .xfa file.
     ierr = xf_Error(xf_ReadAllBinary(XfaFile, All));
-
     if (ierr != xf_OK) return NULL;
 
+    // Use the pyxflow command to load the equation set (libraries?).
     ierr = xf_Error(LoadEqnSet(All->EqnSet));
-
     if (ierr != xf_OK) return NULL;
 
+    // No idea
     ierr = xf_Error(xf_EqnSetRegister(All->EqnSet));
-
     if (ierr != xf_OK) return NULL;
 
-    // Return the pointer
+    // Return the pointer.
     return Py_BuildValue("n", All);
 }
 

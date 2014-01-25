@@ -30,25 +30,28 @@ directory=os.path.dirname(os.path.realpath(__file__))
 # Add the appropriate XFlow library to the list
 libs = ["xfSerial"]
 
+# Add xflow to the include_dirs (avoids having empty strings).
+if include_dirs == ['']:
+	include_dirs = [xflow_home+"/include"]
+else:
+	include_dirs = [xflow_home+"/include"] + include_dirs
 
 # Assemble the information for the module
 _pyxflow = Extension("_pyxflow",
-                     include_dirs=[xflow_home + "/include"] + include_dirs,
-                     libraries=libs,
-                     library_dirs=[xflow_home + "/lib"],
-                     runtime_library_dirs=[xflow_home + "/lib"],
-                     extra_compile_args=cflags,
-                     extra_link_args=ldflags,
-                     extra_objects=[
-                         xflow_home +
-                         "/build/src/xf_EqnSetHook.o"],
-                     sources=[
-                         "_pyxflowmodule.c",
-                         "px_Geom.c",
-                         "px_Mesh.c",
-                         "px_DataSet.c",
-                         "px_Plot.c",
-                         "px_All.c"])
+    include_dirs = include_dirs,
+    libraries = libs,
+    library_dirs = [xflow_home+"/lib"],
+    runtime_library_dirs = [xflow_home+"/lib"],
+    extra_compile_args = cflags,
+    extra_link_args = ldflags,
+    extra_objects = [xflow_home+"/build/src/xf_EqnSetHook.o"],
+    sources = [
+        "_pyxflowmodule.c",
+        "px_Geom.c",
+        "px_Mesh.c",
+        "px_DataSet.c",
+        "px_Plot.c",
+        "px_All.c"])
 
 # Compile and link
 setup(
