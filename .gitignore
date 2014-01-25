@@ -15,3 +15,5 @@ _test*
 config.cfg
 *.xfa
 *.log
+
+.env

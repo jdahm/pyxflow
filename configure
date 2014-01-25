@@ -120,24 +120,6 @@ while [[ $1 ]]; do
 	    python_exec="$1"
 	    shift
 	    ;;
-	-arch | --arch )
-	    shift
-	    sys_arch="$1"
-	    shift
-	    ;;
-	-eqnset | --eqnset )
-	    shift
-	    eqnset="$1"
-	    shift
-	    ;;
-	-nolapack | --nolapack )
-	    flapack="false"
-	    shift
-	    ;;
-	-blas | blas)
-	    fblas="false"
-	    shift
-	    ;;
 	-help | -h | --help)
 	    usage
 	    exit_ok
@@ -155,6 +137,10 @@ python_ver=$(get_python_ver $python_exec)
 cc=$(get_option $xflow_home/XF_CONFIG CC)
 cflags=$(get_option $xflow_home/XF_CONFIG CFLAGS)
 rdynamic=$(get_option $xflow_home/XF_CONFIG RDYNAMIC)
+rdynamic=${rdynamic}" -Wl,-rpath,$(pwd)/pyxflow/lib"
+
+extra_libs=
+include_dirs=
 
 # Inform user of options
 echo_t "  Configuration settings"
@@ -174,11 +160,10 @@ cat > $outfile <<EOF
 [python]
 exec = $python_exec
 version = $python_ver
-arch = $sys_arch
 
 [xflow]
 home = $xflow_home
-extra_libs =
+extra_libs = $extra_libs
 
 [compiler]
 cc = $cc

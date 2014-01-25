@@ -2,6 +2,7 @@
 from distutils.core import setup, Extension
 import ConfigParser
 import json
+import os.path
 
 # Get a get/set type object
 config = ConfigParser.SafeConfigParser()
@@ -23,6 +24,8 @@ extra_libs = [str(x) for x in libstrs.split(' ')]
 
 includestrs = config.get("compiler", "include_dirs")
 include_dirs = [str(x) for x in includestrs.split(' ')]
+
+directory=os.path.dirname(os.path.realpath(__file__))
 
 # Add the appropriate XFlow library to the list
 libs = ["xfSerial"]

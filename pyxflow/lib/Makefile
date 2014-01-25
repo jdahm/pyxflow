@@ -1,6 +1,6 @@
 -include Makefile.in
 
-ADDDIR = -L$(XF_HOME)/lib
+ADDDIR = $(RDYNAMIC) -L$(XF_HOME)/lib
 
 all: Scalar CompressibleNS Acoustics ShallowWater RadHydro
 

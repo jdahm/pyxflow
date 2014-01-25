@@ -8,6 +8,7 @@ config = ConfigParser.SafeConfigParser()
 config.read("../../config.cfg")
 
 with open("Makefile.in", mode="w") as f:
+    f.write("RDYNAMIC = {}\n".format(config.get("compiler", "rdynamic")))
     f.write("XF_HOME = {}".format(config.get("xflow", "home")))
 
 sp.call(["make"])
