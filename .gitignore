@@ -4,6 +4,7 @@
 
 build/
 configure.log
+PX_CONFIG
 
 *.so
 *.o

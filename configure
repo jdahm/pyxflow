@@ -137,7 +137,7 @@ python_ver=$(get_python_ver $python_exec)
 cc=$(get_option $xflow_home/XF_CONFIG CC)
 cflags=$(get_option $xflow_home/XF_CONFIG CFLAGS)
 rdynamic=$(get_option $xflow_home/XF_CONFIG RDYNAMIC)
-rdynamic=${rdynamic}" -Wl,-rpath,$(pwd)/pyxflow/lib"
+#rdynamic=${rdynamic}" -Wl,-rpath,$(pwd)/pyxflow/lib"
 
 extra_libs=
 include_dirs=

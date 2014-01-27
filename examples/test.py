@@ -2,7 +2,7 @@
 from pyxflow.All import xf_All
 import matplotlib.pyplot as plt
 
-A = xf_All("/Users/jdahm/xflow/demo/naca_0.xfa")
+A = xf_All("/home/dalle/usr/local/xflow/demo/naca_0.xfa")
 M = A.Mesh
 E = A.EqnSet
 
