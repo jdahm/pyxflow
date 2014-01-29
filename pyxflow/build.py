@@ -15,8 +15,6 @@ print "Building XFlow equation sets for python..."
 # Clean-up the existing build directory
 shutil.rmtree("build", ignore_errors=True)
 
-
-
 print "Executing setup..."
 sp.call([pythonexec, "setup.py", "build"])
 
@@ -33,3 +31,4 @@ shutil.move(lib, "./_pyxflow.so")
 
 print "Removing the build directory..."
 shutil.rmtree("build")
+

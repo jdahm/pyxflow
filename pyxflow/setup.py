@@ -16,14 +16,14 @@ xflow_home = config.get("xflow", "home")
 cflagstrs = config.get("compiler", "cflags")
 cflags = [str(x) for x in cflagstrs.split(' ')]
 
-ldflagstrs = config.get("compiler", "rdynamic")
+ldflagstrs = config.get("compiler", "ldflags")
 ldflags = [str(x) for x in ldflagstrs.split(' ')]
-
-libstrs = config.get("xflow", "extra_libs")
-extra_libs = [str(x) for x in libstrs.split(' ')]
 
 includestrs = config.get("compiler", "include_dirs")
 include_dirs = [str(x) for x in includestrs.split(' ')]
+
+libstrs = config.get("xflow", "extra_libs")
+extra_libs = [str(x) for x in libstrs.split(' ')]
 
 directory=os.path.dirname(os.path.realpath(__file__))
 
