@@ -129,8 +129,9 @@ static int
 FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubData *SD)
 {
     int ierr, dim, pnn, Order, egrp, elem, face;
+    int dbfgrp, dbface;
     enum xfe_BasisType QBasis, QOrder;
-    enum xfe_ShapeType Shape;
+    enum xfe_ShapeType Shape, FShape;
 
     dim = Mesh->Dim;
 
@@ -157,9 +158,14 @@ FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubDat
 
         pnn = SD->nnode;
 
-        // Get the element subdivision
-        ierr = xf_Error(xf_GetRefineCoordsOnFace(Shape, face, Order, &SD->nnode, &SD->xref,
-                        &SD->nselem, &SD->selem, &SD->nsbound, &SD->sbound));
+        // get shape on face
+        ierr = xf_Error(xf_FaceShape(Shape, face, &FShape));
+
+        if (ierr != xf_OK) return ierr;
+  
+        // refinement coords on face
+        ierr = xf_Error(xf_GetRefineCoords(FShape, Order, &SD->nnode, &SD->xref, &SD->nselem,
+                    &SD->selem, &SD->nsbound, &SD->sbound));
 
         if (ierr != xf_OK) return ierr;
 
@@ -171,8 +177,11 @@ FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubDat
         }
     }
 
-    ierr = xf_Error(xf_Ref2GlobElem(Mesh, egrp, elem, &SD->PhiData, SD->PointsChanged,
-                                    SD->nnode, SD->xref, SD->xglob));
+    // Convert to data numbering
+    //xf_FaceMeshGroup2DataGroup(Mesh, ibfgrp, ibface, &dbfgrp, &dbface);
+
+    ierr = xf_Error(xf_Ref2GlobFace(Mesh, ibfgrp+1, ibface, &SD->PhiData,
+                SD->nnode, SD->xref, SD->xglob));
 
     if (ierr != xf_OK) return ierr;
 
@@ -358,7 +367,7 @@ MeshPlotData_1D(xf_Mesh *Mesh, int egrp, int elem, SubData *FSD, MeshPlotData *M
 static int
 MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *FSD, MeshPlotData *MPD)
 {
-    int ierr, nface, face, nn, i, f, ibfgrp;
+    int ierr, nface, face, nn, i, f, ibfgrp, ibface;
     enum xfe_Bool OnLeft;
     enum xfe_FaceType FaceType;
     xf_IFace IFace;
@@ -376,7 +385,7 @@ MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *FSD, Me
 
     for (face = 0, i = 0, f = 0; face < nface; face++) {
         Face = Mesh->ElemGroup[egrp].Face[elem][face];
-        xf_FaceGroupInfo(Mesh, Face.Group, &FaceType, NULL, NULL);
+        xf_FaceGroupInfo(Mesh, Face.Group, &FaceType, &ibfgrp, NULL);
 
         if (FaceType == xfe_FaceInterior) {
             IFace = Mesh->IFace[Face.Number];
@@ -384,13 +393,7 @@ MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *FSD, Me
             ierr = xf_Error(xf_IsElemOnLeft(IFace, egrp, elem, &OnLeft));
 
             if (ierr != xf_OK) return ierr;
-
-            // TODO Figure out why/how ibfgrp is inconsistent
-            ibfgrp = -1;
-        } else {
-            OnLeft = xfe_True;
-            ibfgrp = Face.Group - 1;
-        }
+        } else OnLeft = xfe_True;
 
         if (!OnLeft) continue;
 
@@ -400,9 +403,9 @@ MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *FSD, Me
 
         nn = FSD->nnode;
 
-        // Reallocate MPD->x if necessary
+        // Reallocate MPD->x if necessary (over-allocating for speed)
         if (MPD->xsize < DIMP * (i + nn)) {
-            MPD->xsize = DIMP * (i + nn);
+            MPD->xsize = 2 * DIMP * (i + nn);
             ierr = xf_Error(xf_ReAlloc((void **)&MPD->x, MPD->xsize, sizeof(real)));
 
             if (ierr != xf_OK) return ierr;
@@ -827,7 +830,7 @@ px_ScalarPlotData(PyObject *self, PyObject *args)
                 // Simple in this case
                 if (!FixedOrder){
                     UOrder = xf_InterpOrder(U, egrp, elem);
-                    Order = 3 * max(QOrder, UOrder) + 1;
+                    Order = 2 * max(QOrder, UOrder) + 1;
                 }
                 ierr = xf_Error(FindElemSubData(Mesh, egrp, elem, &Order, &ESD));
 
