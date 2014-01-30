@@ -236,8 +236,13 @@ class xf_Plot:
         xlim = [xmin, xmax, ymin, ymax]
         # Save the limits.
         self.xlim = xlim
+        Order = kwargs.get('order')
+
+        x, y, c = px.MeshPlotData(self._ptr, xmin, xmax, Order)
+        
         # Get the calculated vector, triangulation, and mesh lines.
         X, u, T, L = px.PlotData(All._ptr, UG._ptr, xlim)
+        
         # Convert mesh lines to NumPy array.
         L = np.asarray(L)
 

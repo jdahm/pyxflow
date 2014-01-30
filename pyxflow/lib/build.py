@@ -20,9 +20,6 @@ objdir = dirs[0]
 fnames = glob.glob(objdir + "/*.o")
 # Turn this list of files into a string.
 objstr = " ".join(fnames)
-print "\n\n\n\nfiles: "
-print objstr
-print "\n\n\n\n"
 
 # Write the "Makefile.in" from scratch.
 with open("Makefile.in", mode="w") as f:

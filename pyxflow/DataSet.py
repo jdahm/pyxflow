@@ -64,9 +64,9 @@ class xf_DataSet:
             self.owner = True
             # Exit the function
             return None
-
+        
         # Get the number of components.
-        nData = px.nDataSetData(self._ptr)
+        self.nData = px.nDataSetData(self._ptr)
         # Get the components
         self.Data = [xf_Data(self._ptr, i) for i in range(self.nData)]
 

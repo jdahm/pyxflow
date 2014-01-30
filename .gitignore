@@ -2,10 +2,13 @@
 *~
 *.swp
 
+# Configuration
 build/
 configure.log
 PX_CONFIG
+config.cfg
 
+# Libraries
 *.so
 *.o
 *.orig
@@ -13,8 +16,13 @@ PX_CONFIG
 __pycache__/
 _test*
 
-config.cfg
 *.xfa
 *.log
+examples/*.pdf
 
 .env
+
+tmp*
+
+# Documentation ignores
+doc/_*/

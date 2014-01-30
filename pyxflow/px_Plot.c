@@ -157,10 +157,11 @@ FindFaceSubData(xf_Mesh *Mesh, int ibfgrp, int ibface, const int *pOrder, SubDat
 
         pnn = SD->nnode;
 
-        // Get the element subdivision
-        ierr = xf_Error(xf_GetRefineCoordsOnFace(Shape, face, Order, &SD->nnode, &SD->xref,
-                        &SD->nselem, &SD->selem, &SD->nsbound, &SD->sbound));
-
+        // Get the element subdivision.
+        
+        ierr = xf_Error(xf_GetRefineCoordsOnFace(
+            Shape, face, Order, &SD->nnode, &SD->xref,
+            &SD->nselem, &SD->selem, &SD->nsbound, &SD->sbound));
         if (ierr != xf_OK) return ierr;
 
         // Reallocate xref if needed
@@ -394,8 +395,8 @@ MeshPlotData_2D(xf_Mesh *Mesh, int egrp, int elem, int *pOrder, SubData *FSD, Me
 
         if (!OnLeft) continue;
 
-        ierr = xf_Error(FindFaceSubData(Mesh, ibfgrp, Face.Number, pOrder, FSD));
-
+        ierr = xf_Error(FindFaceSubData(\
+            Mesh, ibfgrp, Face.Number, pOrder, FSD));
         if (ierr != xf_OK) return ierr;
 
         nn = FSD->nnode;
@@ -653,24 +654,24 @@ px_MeshPlotData(PyObject *self, PyObject *args)
 
     for (egrp = 0; egrp < Mesh->nElemGroup; egrp++) {
         for (elem = 0; elem < Mesh->ElemGroup[egrp].nElem; elem++) {
-            // check if element is inside window
-            ierr = xf_Error(ElemInsideBoundingBox(Mesh, egrp, elem, xmin, xmax, 0.5, &Inside));
-
+            // Check if element is inside window.
+            ierr = xf_Error(ElemInsideBoundingBox(\
+                Mesh, egrp, elem, xmin, xmax, 0.5, &Inside));
             if (ierr != xf_OK) return NULL;
 
             if (!Inside) continue;
 
             if (dim == 1) {
-                ierr = xf_Error(MeshPlotData_1D(Mesh, egrp, elem, &FSD, &MPD));
-
+                ierr = xf_Error(MeshPlotData_1D(\
+                    Mesh, egrp, elem, &FSD, &MPD));
                 if (ierr != xf_OK) return NULL;
             } else if (dim == 2) {
-                ierr = xf_Error(MeshPlotData_2D(Mesh, egrp, elem, pOrder, &FSD, &MPD));
-
+                ierr = xf_Error(MeshPlotData_2D(\
+                    Mesh, egrp, elem, pOrder, &FSD, &MPD));
                 if (ierr != xf_OK) return NULL;
             } else if (dim == 3) {
-                ierr = xf_Error(MeshPlotData_3D(Mesh, egrp, elem, pOrder, &ESD, &FSD, &MPD));
-
+                ierr = xf_Error(MeshPlotData_3D(\
+                    Mesh, egrp, elem, pOrder, &ESD, &FSD, &MPD));
                 if (ierr != xf_OK) return NULL;
             } else return NULL;
 
@@ -775,7 +776,8 @@ px_ScalarPlotData(PyObject *self, PyObject *args)
     ScalarPlotData SPD;
 
     // Parse the inputs.
-    if (!PyArg_ParseTuple(args, "nnnOOOO", &U, &Mesh, &EqnSet, &py_scalar, &py_min, &py_max, &py_order))
+    if (!PyArg_ParseTuple(args, "nnnOOOO", \
+            &U, &Mesh, &EqnSet, &py_scalar, &py_min, &py_max, &py_order))
         return NULL;
 
     dim = Mesh->Dim;
