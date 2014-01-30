@@ -71,7 +71,7 @@ unknown_option() {
 }
 
 get_option() {
-    grep $2 $1 | awk -F'=' '{ print $2 }' | sed -e 's/^ *//g' -e 's/ *$//g'
+    grep "^ *$2" $1 | awk -F'=' '{ print $2 }' | sed -e 's/^ *//g' -e 's/ *$//g'
 }
 
 get_python_ver() {
@@ -171,9 +171,10 @@ newline
 echo_t "  * CC = $cc"
 echo_t "  * CFLAGS = $cflags"
 newline
-echo_t "   See config.cfg for all settings"
+echo_t "  See config.cfg for all settings"
 echo_t
 
+echo_t " $extra_cflags"
 # Start writing configuration file
 cat > $outfile <<EOF
 [python]

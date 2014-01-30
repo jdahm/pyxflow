@@ -39,14 +39,17 @@ libs = ["xfSerial"]
 # Add xflow to the include_dirs
 include_dirs.append(op.join(xflow_home, "include"))
 
+# filter out empty strings from include_dirs
+include_dirs = filter(None, include_dirs)
+
 # Assemble the information for the module
 _pyxflow = Extension("_pyxflow",
-    include_dirs = include_dirs,
-    libraries = libs,
+    include_dirs = filter(None, include_dirs),
+    libraries = filter(None, libs),
     library_dirs = [xflow_lib],
     runtime_library_dirs = [xflow_lib, pyxflow_lib],
-    extra_compile_args = cflags,
-    extra_link_args = ldflags,
+    extra_compile_args = filter(None, cflags),
+    extra_link_args = filter(None, ldflags),
     extra_objects = [op.join(xflow_home, "build/src/xf_EqnSetHook.o")],
     sources = [
         "_pyxflowmodule.c",
