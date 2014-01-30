@@ -1,20 +1,25 @@
 -include Makefile.in
 
-ADDDIR = $(RDYNAMIC) -L$(XF_HOME)/lib
+ADDDIR = $(LDFLAGS) -L$(XF_HOME)/lib
 
 all: Scalar CompressibleNS Acoustics ShallowWater RadHydro
 
-Scalar:
-	gcc -shared $(ADDDIR) -o libpxScalar.so $(OBJ_LIST) -lxfSerial -lScalar
+HOOK_OBJ = px_Hook.o
 
-CompressibleNS:
-	gcc -shared $(ADDDIR) -o libpxCompressibleNS.so $(OBJ_LIST) -lxfSerial -lCompressibleNS
+$(HOOK_OBJ): px_Hook.c
+	$(CC) -I$(XF_HOME)/include -c -o $@ $^
 
-Acoustics:
-	gcc -shared $(ADDDIR) -o libpxAcoustics.so $(OBJ_LIST) -lxfSerial -lAcoustics
+Scalar: $(HOOK_OBJ)
+	gcc -shared $(ADDDIR) -o libpxScalar.so $(HOOK_OBJ) -lxfSerial -lScalar
 
-ShallowWater:
-	gcc -shared $(ADDDIR) -o libpxShallowWater.so $(OBJ_LIST) -lxfSerial -lShallowWater
+CompressibleNS: $(HOOK_OBJ)
+	gcc -shared $(ADDDIR) -o libpxCompressibleNS.so $(HOOK_OBJ) -lxfSerial -lCompressibleNS
 
-RadHydro:
-	gcc -shared $(ADDDIR) -o libpxRadHydro.so $(OBJ_LIST) -lxfSerial -lRadHydro
+Acoustics: $(HOOK_OBJ)
+	gcc -shared $(ADDDIR) -o libpxAcoustics.so $(HOOK_OBJ) -lxfSerial -lAcoustics
+
+ShallowWater: $(HOOK_OBJ)
+	gcc -shared $(ADDDIR) -o libpxShallowWater.so $(HOOK_OBJ) -lxfSerial -lShallowWater
+
+RadHydro: $(HOOK_OBJ)
+	gcc -shared $(ADDDIR) -o libpxRadHydro.so $(HOOK_OBJ) -lxfSerial -lRadHydro

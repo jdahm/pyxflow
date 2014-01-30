@@ -136,11 +136,15 @@ python_ver=$(get_python_ver $python_exec)
 # Compiler options
 cc=$(get_option $xflow_home/XF_CONFIG CC)
 cflags=$(get_option $xflow_home/XF_CONFIG CFLAGS)
-rdynamic=$(get_option $xflow_home/XF_CONFIG RDYNAMIC)
-#rdynamic=${rdynamic}" -Wl,-rpath,$(pwd)/pyxflow/lib"
+ldflags=$(get_option $xflow_home/XF_CONFIG RDYNAMIC)
 
-extra_libs=
+if [ $os = 'Darwin' ]; then
+    ldflags=${ldflags}" -mmacosx-version-min=10.5"
+fi
+
+# Unused for now
 include_dirs=
+extra_libs=
 
 # Inform user of options
 echo_t "  Configuration settings"
@@ -152,9 +156,10 @@ echo_t "  * XFlow path is $xflow_home"
 newline
 echo_t "  * Compiler is $cc"
 echo_t "  * CFLAGS = $cflags"
-echo_t "  * LDFLAGS = $rdynamic"
+echo_t "  * LDFLAGS = $ldflags"
 newline
 echo_t
+
 # Start writing configuration file
 cat > $outfile <<EOF
 [python]
@@ -168,6 +173,6 @@ extra_libs = $extra_libs
 [compiler]
 cc = $cc
 cflags = $cflags
-rdynamic = $rdynamic
+ldflags = $ldflags
 include_dirs = $include_dirs
 EOF

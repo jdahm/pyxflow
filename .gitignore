@@ -1,6 +1,7 @@
 *.py[cod]
 *~
 *.swp
+.DS_Store
 
 # Configuration
 build/
@@ -26,3 +27,4 @@ tmp*
 
 # Documentation ignores
 doc/_*/
+.python-version
