@@ -134,16 +134,30 @@ done
 python_ver=$(get_python_ver $python_exec)
 
 # Compiler options
-cc=$(get_option $xflow_home/XF_CONFIG CC)
-cflags=$(get_option $xflow_home/XF_CONFIG CFLAGS)
-ldflags=$(get_option $xflow_home/XF_CONFIG RDYNAMIC)
+cc=$(get_option ${xflow_home}/XF_CONFIG CC)
+extra_cflags=$(get_option ${xflow_home}/XF_CONFIG CFLAGS)
+extra_ldflags=
+#if [ "$os" = "Darwin" ]; then
+#    extra_ldflags="-undefined dynamic_lookup"
+#fi
+#$(get_option ${xflow_home}/XF_CONFIG DYNLDFLAGS)
 
-if [ $os = 'Darwin' ]; then
-    ldflags=${ldflags}" -mmacosx-version-min=10.5"
+# Linker options for pyxflow equation sets
+# --no-as-needed is required for the linux linker
+# since it now defaults to --as-needed
+if [ "$os" = "Linux" ]; then
+    eqnset_extra_ldflags="-shared -Wl,--no-as-needed"
+elif [ "$os" = "Darwin" ]; then
+    eqnset_extra_ldflags="-dynamiclib"
 fi
 
+# Need to ensure we are building for relatively recent versions of OS X
+#if [ "$os" = "Darwin" ]; then
+#    ldflags=${ldflags}" -mmacosx-version-min=10.5"
+#fi
+
 # Unused for now
-include_dirs=
+extra_include_dirs=
 extra_libs=
 
 # Inform user of options
@@ -154,10 +168,10 @@ echo_t "  * Python version is $python_ver"
 newline
 echo_t "  * XFlow path is $xflow_home"
 newline
-echo_t "  * Compiler is $cc"
+echo_t "  * CC = $cc"
 echo_t "  * CFLAGS = $cflags"
-echo_t "  * LDFLAGS = $ldflags"
 newline
+echo_t "   See config.cfg for all settings"
 echo_t
 
 # Start writing configuration file
@@ -172,7 +186,9 @@ extra_libs = $extra_libs
 
 [compiler]
 cc = $cc
-cflags = $cflags
-ldflags = $ldflags
-include_dirs = $include_dirs
+extra_cflags = $extra_cflags
+extra_ldflags = $extra_ldflags
+eqnset_extra_ldflags = $eqnset_extra_ldflags
+extra_include_dirs = $extra_include_dirs
 EOF
+

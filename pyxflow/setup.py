@@ -2,49 +2,52 @@
 from distutils.core import setup, Extension
 import ConfigParser
 import json
-import os.path
+import os.path as op
 
 # Get a get/set type object
 config = ConfigParser.SafeConfigParser()
 # Read the configuration options
 config.read("../config.cfg")
 
+# Path to this fule
+directory=op.dirname(op.realpath(__file__))
+
 # The most important parameter: path to XFlow
 xflow_home = config.get("xflow", "home")
+xflow_lib = op.join(xflow_home, "lib")
+xflow_include = op.join(xflow_home, "include")
+
+# Path to pyxflow equation sets
+pyxflow_lib = op.join(directory, "lib")
 
 # Compiler and linker options
-cflagstrs = config.get("compiler", "cflags")
+cflagstrs = config.get("compiler", "extra_cflags")
 cflags = [str(x) for x in cflagstrs.split(' ')]
 
-ldflagstrs = config.get("compiler", "ldflags")
+ldflagstrs = config.get("compiler", "extra_ldflags")
 ldflags = [str(x) for x in ldflagstrs.split(' ')]
 
-includestrs = config.get("compiler", "include_dirs")
+includestrs = config.get("compiler", "extra_include_dirs")
 include_dirs = [str(x) for x in includestrs.split(' ')]
 
 libstrs = config.get("xflow", "extra_libs")
 extra_libs = [str(x) for x in libstrs.split(' ')]
 
-directory=os.path.dirname(os.path.realpath(__file__))
-
 # Add the appropriate XFlow library to the list
 libs = ["xfSerial"]
 
-# Add xflow to the include_dirs (avoids having empty strings).
-if include_dirs == ['']:
-	include_dirs = [xflow_home+"/include"]
-else:
-	include_dirs = [xflow_home+"/include"] + include_dirs
+# Add xflow to the include_dirs
+include_dirs.append(op.join(xflow_home, "include"))
 
 # Assemble the information for the module
 _pyxflow = Extension("_pyxflow",
     include_dirs = include_dirs,
     libraries = libs,
-    library_dirs = [xflow_home+"/lib"],
-    runtime_library_dirs = [xflow_home+"/lib"],
+    library_dirs = [xflow_lib],
+    runtime_library_dirs = [xflow_lib, pyxflow_lib],
     extra_compile_args = cflags,
     extra_link_args = ldflags,
-    extra_objects = [xflow_home+"/build/src/xf_EqnSetHook.o"],
+    extra_objects = [op.join(xflow_home, "build/src/xf_EqnSetHook.o")],
     sources = [
         "_pyxflowmodule.c",
         "px_Geom.c",

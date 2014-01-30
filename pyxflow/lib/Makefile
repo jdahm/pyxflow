@@ -1,20 +1,21 @@
 -include Makefile.in
 
-ADDDIR = $(RDYNAMIC) -L$(XF_HOME)/lib
+ADDDIR = -L$(XF_HOME)/lib
+DYNLDFLAGS = $(LDFLAGS)
 
 all: Scalar CompressibleNS Acoustics ShallowWater RadHydro
 
 Scalar:
-	gcc -shared $(ADDDIR) -o libpxScalar.so $(OBJ_LIST) -lxfSerial -lScalar
+	gcc $(ADDDIR) -o libpxScalar.so $(DYNLDFLAGS) -lxfSerial -lScalar
 
 CompressibleNS:
-	gcc -shared $(ADDDIR) -o libpxCompressibleNS.so $(OBJ_LIST) -lxfSerial -lCompressibleNS
+	gcc $(ADDDIR) -o libpxCompressibleNS.so $(DYNLDFLAGS) -lxfSerial -lCompressibleNS
 
 Acoustics:
-	gcc -shared $(ADDDIR) -o libpxAcoustics.so $(OBJ_LIST) -lxfSerial -lAcoustics
+	gcc $(ADDDIR) -o libpxAcoustics.so $(DYNLDFLAGS) -lxfSerial -lAcoustics
 
 ShallowWater:
-	gcc -shared $(ADDDIR) -o libpxShallowWater.so $(OBJ_LIST) -lxfSerial -lShallowWater
+	gcc $(ADDDIR) -o libpxShallowWater.so $(DYNLDFLAGS) -lxfSerial -lShallowWater
 
 RadHydro:
-	gcc -shared $(ADDDIR) -o libpxRadHydro.so $(OBJ_LIST) -lxfSerial -lRadHydro
+	gcc $(ADDDIR) -o libpxRadHydro.so $(DYNLDFLAGS) -lxfSerial -lRadHydro
