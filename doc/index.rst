@@ -18,6 +18,60 @@ Contents
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
+
+Installation
+============
+
+To install the :mod:`pyxflow` package, you will first need to meet several
+prerequisites.  First, `XFlow <http://xflow.engin.umich.edu/>`_ must be
+installed and compiled.  Second, you will need to have
+`Git <http://git-scm.com/>`_ installed.  Ton istall Git on a Debian-based
+system such as Ubuntu, simply run the following command in a terminal.
+
+    .. code-block:: bashsession
+        
+        $ sudo apt-get install git
+
+Finally, there are two Python packages that are required.  The first of these
+is the Python development backage, which is usually called `python-dev`.
+The second package is `matplotlib <http://matplotlib.org/>`_, which is usually
+a package of the same name.
+
+An additional package that can make using :mod:`pyxflow` more intuitive is
+called `IPython <http://ipython.org/>`_.  The main reason that IPython is
+recommended is that it allows you to press the Tab key to autocomplete the
+names of various :mod:`pyxflow` commands.
+
+Once your system is prepared by following the above steps, download the
+source code by running the following command.
+
+    .. code-block:: bashsession
+        
+        $ git clone https://github.com/jdahm/pyxflow.git
+
+This will create a folder called `pyxflow` as a subdirectory of your current
+working directory.  Before compiling, a configuration script must be run.  In
+most cases, simply run the following.
+
+    .. code-block:: bashsession
+
+        $ cd pyxflow
+        $ ./configure -xflow path/to/xflow
+        $ make
+
+If the path to XFlow is `/home/user/xflow` (replacing `user` with your
+username) or if it matches the value of `$HOME/xflow`, the commands can be
+further simplified.
+
+    .. code-block:: bashsession
+
+        $ cd pyxflow
+        $ ./configure
+        $ make
+
+
+
 
 
 
