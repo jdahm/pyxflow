@@ -106,22 +106,95 @@ class xf_Mesh:
         if self.owner:
             px.DestroyMesh(self._ptr)
 
+    # Plot method for mesh
     def Plot(self, **kwargs):
+        """
+        Mesh plotting method
+        """
+        
+        # Initialize coordinate limits.
+        xLimMin = [None for i in range(self.Dim)]
+        xLimMax = [None for i in range(self.Dim)]
+        # Lowest priority: list of xmins
         if kwargs.get('xmin') is not None:
             xmin = kwargs['xmin']
-        else:
-            xmin = [None for i in range(self.Dim)]
-
+            # Check the dimensions.
+            if len(xmin) == self.Dim:
+                xLimMin = xmin
+        # Lowest priority: list of xmins
         if kwargs.get('xmax') is not None:
             xmax = kwargs['xmax']
-        else:
-            xmax = [None for i in range(self.Dim)]
+            # Check the dimensions.
+            if len(xmax) == self.Dim:
+                xLimMax = xmax
+                
+        # Next priority: full list
+        if kwargs.get('xlim') is not None:
+            xlim = kwargs['xlim']
+            # Check the dimensions.
+            if len(xlim) == 2*self.Dim:
+                # Get every other element.
+                xLimMin = xlim[0::2]
+                xLimMax = xlim[1::2]
+                
+        # Second priority, individual limits
+        if kwargs.get('xlim') is not None:
+            xlim = kwargs['xlim']
+            # Check the dimensions.
+            if len(xlim)==2 and self.Dim>1:
+                xLimMin[0] = xlim[0]
+                xLimMax[0] = xlim[1]
+        if kwargs.get('ylim') is not None:
+            ylim = kwargs['ylim']
+            # Check if it's appropriate.
+            if len(ylim)==2 and self.Dim>1:
+                xLimMin[1] = ylim[0]
+                xLimMax[1] = ylim[1]
+        if kwargs.get('zlim') is not None:
+            zlim = kwargs['zlim']
+            # Check if it's appropriate.
+            if len(zlim)==2 and self.Dim>2:
+                xLimMin[2] = zlim[0]
+                xLimMax[2] = zlim[1]
+                
+        # Top priority: individual mins and maxes overrule other inputs.
+        if kwargs.get('xmin') is not None:
+            xmin = kwargs['xmin']
+            # Check for a scalar (and relevance).
+            if len(xmin)==1 and self.Dim>1:
+                xLimMin[0] = xmin
+        if kwargs.get('xmax') is not None:
+            xmax = kwargs['xmax']
+            # Check for a scalar (and relevance).
+            if len(xmax)==1 and self.Dim>1:
+                xLimMax[0] = xmax
+        if kwargs.get('ymin') is not None:
+            ymin = kwargs['ymin']
+            # Check for a scalar.
+            if len(ymin)==1:
+                xLimMin[1] = ymin
+        if kwargs.get('ymax') is not None:
+            ymax = kwargs['ymax']
+            # Check for a scalar.
+            if len(ymax)==1:
+                xLimMax[1] = ymax
+        if kwargs.get('zmin') is not None:
+            zmin = kwargs['zmin']
+            # Check for a scalar.
+            if len(zmin)==1:
+                xLimMin[2] = zmin
+        if kwargs.get('zmax') is not None:
+            zmax = kwargs['zmax']
+            # Check for a scalar.
+            if len(zmax)==1:
+                xLimMax[2] = zmax
 
+        # Get the defaults based on all mesh coordinates.
         for i in range(self.Dim):
-            if xmin[i] is None:
-                xmin[i] = self.Coord[:, i].min()
-            if xmax[i] is None:
-                xmax[i] = self.Coord[:, i].max()
+            if xLimMin[i] is None:
+                xLimMin[i] = self.Coord[:, i].min()
+            if xLimMax[i] is None:
+                xLimMax[i] = self.Coord[:, i].max()
 
         if kwargs.get('figure') is not None:
             self.figure = kwargs['figure']
@@ -135,7 +208,7 @@ class xf_Mesh:
 
         Order = kwargs.get('order')
 
-        x, y, c = px.MeshPlotData(self._ptr, xmin, xmax, Order)
+        x, y, c = px.MeshPlotData(self._ptr, xLimMin, xLimMax, Order)
         s = []
         for f in range(len(c) - 1):
             s.append(zip(x[c[f]:c[f + 1]], y[c[f]:c[f + 1]]))
