@@ -196,54 +196,49 @@ class xf_Plot:
     
     # Plot method for mesh
     def PlotMesh(self, Mesh, **kwargs):
-        """
-        Create a plot for an xf_Mesh object.
+        """Create a plot for an xf_Mesh object.
         
         Elements that do not have at least one node with a coordinate between
         `xmin[i]` and `xmax[i]`, for `i` corresponding to each dimension in the
         mesh, are not plotted.
         
-        Call
-        ----
-        >>> h_p.PlotMesh(Mesh, **kwargs)
+        :Call:
+            >>> h_p.PlotMesh(Mesh, **kwargs)
         
-        Parameters
-        ----------
-        h_p : xf_Plot
-            Instance of an xf_Plot object
-        Mesh : xf_Mesh
-            Instance of mesh to plot
-        
-        Returns
-        -------
-        None
-        
-        Keyword Arguments
-        -----------------
-        order : int
-            Interpolation order for mesh faces
-        line_options : dict
-            Options for matplotlib.pyplot.LineCollection
-        xmin : float, array
-            Minimum `x`-coordinate for plot window or array of minimum
-            coordinates
-        xmax : float, array
-            Maximum `x`-coordinate for plot window or array of maximum
-            coordinates
-        xlim : array
-            Minimum and maximum `x` coordinates or [`xmin`, `xmax`, `ymin`, ...]
-        ymin : float
-            Minimum `y`-coordinate for plot window
-        ymax : float
-            Maximum `y`-coordinate for plot window
-        ylim : array
-            List of [`ymin`, `ymax`]
-        zmin : float
-            Minimum `z`-coordinate for plot window
-        zmax : float
-            Maximum `z`-coordinate for plot window
-        zlim : array
-            List of [`zmin`, `zmax`]
+        :Parameters:
+            h_p : :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+            Mesh : :class:`pyxflow.Mesh.xf_Mesh`
+                Mesh to be plotted
+                
+        :Returns:
+            `None`
+            
+        :Kwargs:
+            order : int
+                Interpolation order for mesh faces
+            line_options : dict
+                Options for matplotlib.pyplot.LineCollection
+            xmin : float, array
+                Minimum `x`-coordinate for plot window or array of minimum
+                coordinates
+            xmax : float, array
+                Maximum `x`-coordinate for plot window or array of maximum
+                coordinates
+            xlim : array
+                Minimum and maximum `x` coordinates or [`xmin`, `xmax`, `ymin`, ...]
+            ymin : float
+                Minimum `y`-coordinate for plot window
+            ymax : float
+                Maximum `y`-coordinate for plot window
+            ylim : array
+                List of [`ymin`, `ymax`]
+            zmin : float
+                Minimum `z`-coordinate for plot window
+            zmax : float
+                Maximum `z`-coordinate for plot window
+            zlim : array
+                List of [`zmin`, `zmax`]
         
         
         """
