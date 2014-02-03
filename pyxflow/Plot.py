@@ -197,92 +197,59 @@ class xf_Plot:
     # Plot method for mesh
     def PlotMesh(self, Mesh, **kwargs):
         """
-        Mesh plotting method
+        Create a plot for an xf_Mesh object.
+        
+        Elements that do not have at least one node with a coordinate between
+        `xmin[i]` and `xmax[i]`, for `i` corresponding to each dimension in the
+        mesh, are not plotted.
+        
+        Call
+        ----
+        >>> h_p.PlotMesh(Mesh, **kwargs)
+        
+        Parameters
+        ----------
+        h_p : xf_Plot
+            Instance of an xf_Plot object
+        Mesh : xf_Mesh
+            Instance of mesh to plot
+        
+        Returns
+        -------
+        None
+        
+        Keyword Arguments
+        -----------------
+        order : int
+            Interpolation order for mesh faces
+        line_options : dict
+            Options for matplotlib.pyplot.LineCollection
+        xmin : float, array
+            Minimum `x`-coordinate for plot window or array of minimum
+            coordinates
+        xmax : float, array
+            Maximum `x`-coordinate for plot window or array of maximum
+            coordinates
+        xlim : array
+            Minimum and maximum `x` coordinates or [`xmin`, `xmax`, `ymin`, ...]
+        ymin : float
+            Minimum `y`-coordinate for plot window
+        ymax : float
+            Maximum `y`-coordinate for plot window
+        ylim : array
+            List of [`ymin`, `ymax`]
+        zmin : float
+            Minimum `z`-coordinate for plot window
+        zmax : float
+            Maximum `z`-coordinate for plot window
+        zlim : array
+            List of [`zmin`, `zmax`]
+        
+        
         """
         
-        # Initialize coordinate limits.
-        xLimMin = [None for i in range(Mesh.Dim)]
-        xLimMax = [None for i in range(Mesh.Dim)]
-        # Lowest priority: list of xmins
-        if kwargs.get('xmin') is not None:
-            xmin = kwargs['xmin']
-            # Check the dimensions.
-            if len(xmin) == Mesh.Dim:
-                xLimMin = xmin
-        # Lowest priority: list of xmins
-        if kwargs.get('xmax') is not None:
-            xmax = kwargs['xmax']
-            # Check the dimensions.
-            if len(xmax) == Mesh.Dim:
-                xLimMax = xmax
-                
-        # Next priority: full list
-        if kwargs.get('xlim') is not None:
-            xlim = kwargs['xlim']
-            # Check the dimensions.
-            if len(xlim) == 2*Mesh.Dim:
-                # Get every other element.
-                xLimMin = xlim[0::2]
-                xLimMax = xlim[1::2]
-                
-        # Second priority, individual limits
-        if kwargs.get('xlim') is not None:
-            xlim = kwargs['xlim']
-            # Check the dimensions.
-            if len(xlim)==2 and Mesh.Dim>1:
-                xLimMin[0] = xlim[0]
-                xLimMax[0] = xlim[1]
-        if kwargs.get('ylim') is not None:
-            ylim = kwargs['ylim']
-            # Check if it's appropriate.
-            if len(ylim)==2 and Mesh.Dim>1:
-                xLimMin[1] = ylim[0]
-                xLimMax[1] = ylim[1]
-        if kwargs.get('zlim') is not None:
-            zlim = kwargs['zlim']
-            # Check if it's appropriate.
-            if len(zlim)==2 and Mesh.Dim>2:
-                xLimMin[2] = zlim[0]
-                xLimMax[2] = zlim[1]
-                
-        # Top priority: individual mins and maxes overrule other inputs.
-        if kwargs.get('xmin') is not None:
-            xmin = kwargs['xmin']
-            # Check for a scalar (and relevance).
-            if len(xmin)==1 and Mesh.Dim>1:
-                xLimMin[0] = xmin
-        if kwargs.get('xmax') is not None:
-            xmax = kwargs['xmax']
-            # Check for a scalar (and relevance).
-            if len(xmax)==1 and Mesh.Dim>1:
-                xLimMax[0] = xmax
-        if kwargs.get('ymin') is not None:
-            ymin = kwargs['ymin']
-            # Check for a scalar.
-            if len(ymin)==1:
-                xLimMin[1] = ymin
-        if kwargs.get('ymax') is not None:
-            ymax = kwargs['ymax']
-            # Check for a scalar.
-            if len(ymax)==1:
-                xLimMax[1] = ymax
-        if kwargs.get('zmin') is not None:
-            zmin = kwargs['zmin']
-            # Check for a scalar.
-            if len(zmin)==1:
-                xLimMin[2] = zmin
-        if kwargs.get('zmax') is not None:
-            zmax = kwargs['zmax']
-            # Check for a scalar.
-            if len(zmax)==1:
-                xLimMax[2] = zmax
-
-        # Get the defaults based on all mesh coordinates.
-        for i in range(Mesh.Dim):
-            if xLimMin[i] is None:
-                xLimMin[i] = Mesh.Coord[:, i].min()
-            if xLimMax[i] is None:
-                xLimMax[i] = Mesh.Coord[:, i].max()
+        # Get the limits based on the Mesh and keyword args
+        xLimMin, xLimMax = GetXLims(Mesh, **kwargs)
 
         if kwargs.get('figure') is not None:
             self.figure = kwargs['figure']
@@ -476,3 +443,97 @@ def set_colormap(h, colorList):
     h.set_cmap(cm)
     # Return nothing
     return None
+    
+
+# Function to process various descriptions of the plot bounding box
+def GetXLims(Mesh, **kwargs):
+    """
+    
+    """
+    # Initialize coordinate limits.
+    xLimMin = [None for i in range(Mesh.Dim)]
+    xLimMax = [None for i in range(Mesh.Dim)]
+    # Lowest priority: list of xmins
+    if kwargs.get('xmin') is not None:
+        xmin = kwargs['xmin']
+        # Check the dimensions.
+        if len(xmin) == Mesh.Dim:
+            xLimMin = xmin
+    # Lowest priority: list of xmins
+    if kwargs.get('xmax') is not None:
+        xmax = kwargs['xmax']
+        # Check the dimensions.
+        if len(xmax) == Mesh.Dim:
+            xLimMax = xmax
+            
+    # Next priority: full list
+    if kwargs.get('xlim') is not None:
+        xlim = kwargs['xlim']
+        # Check the dimensions.
+        if len(xlim) == 2*Mesh.Dim:
+            # Get every other element.
+            xLimMin = xlim[0::2]
+            xLimMax = xlim[1::2]
+            
+    # Second priority, individual limits
+    if kwargs.get('xlim') is not None:
+        xlim = kwargs['xlim']
+        # Check the dimensions.
+        if len(xlim)==2 and Mesh.Dim>1:
+            xLimMin[0] = xlim[0]
+            xLimMax[0] = xlim[1]
+    if kwargs.get('ylim') is not None:
+        ylim = kwargs['ylim']
+        # Check if it's appropriate.
+        if len(ylim)==2 and Mesh.Dim>1:
+            xLimMin[1] = ylim[0]
+            xLimMax[1] = ylim[1]
+    if kwargs.get('zlim') is not None:
+        zlim = kwargs['zlim']
+        # Check if it's appropriate.
+        if len(zlim)==2 and Mesh.Dim>2:
+            xLimMin[2] = zlim[0]
+            xLimMax[2] = zlim[1]
+            
+    # Top priority: individual mins and maxes overrule other inputs.
+    if kwargs.get('xmin') is not None:
+        xmin = kwargs['xmin']
+        # Check for a scalar (and relevance).
+        if len(xmin)==1 and Mesh.Dim>1:
+            xLimMin[0] = xmin
+    if kwargs.get('xmax') is not None:
+        xmax = kwargs['xmax']
+        # Check for a scalar (and relevance).
+        if len(xmax)==1 and Mesh.Dim>1:
+            xLimMax[0] = xmax
+    if kwargs.get('ymin') is not None:
+        ymin = kwargs['ymin']
+        # Check for a scalar.
+        if len(ymin)==1:
+            xLimMin[1] = ymin
+    if kwargs.get('ymax') is not None:
+        ymax = kwargs['ymax']
+        # Check for a scalar.
+        if len(ymax)==1:
+            xLimMax[1] = ymax
+    if kwargs.get('zmin') is not None:
+        zmin = kwargs['zmin']
+        # Check for a scalar.
+        if len(zmin)==1:
+            xLimMin[2] = zmin
+    if kwargs.get('zmax') is not None:
+        zmax = kwargs['zmax']
+        # Check for a scalar.
+        if len(zmax)==1:
+            xLimMax[2] = zmax
+
+    # Get the defaults based on all mesh coordinates.
+    for i in range(Mesh.Dim):
+        if xLimMin[i] is None:
+            xLimMin[i] = Mesh.Coord[:, i].min()
+        if xLimMax[i] is None:
+            xLimMax[i] = Mesh.Coord[:, i].max()
+                
+    # Output the limits.
+    return xLimMin, xLimMax
+                
