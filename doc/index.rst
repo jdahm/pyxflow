@@ -17,8 +17,10 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
-   :numbered:
+    :maxdepth: 2
+    :numbered:
+
+    plot
 
 Installation
 ============
@@ -29,7 +31,7 @@ installed and compiled.  Second, you will need to have
 `Git <http://git-scm.com/>`_ installed.  Ton istall Git on a Debian-based
 system such as Ubuntu, simply run the following command in a terminal.
 
-    .. code-block:: bashsession
+    .. code-block:: console
         
         $ sudo apt-get install git
 
@@ -46,7 +48,7 @@ names of various :mod:`pyxflow` commands.
 Once your system is prepared by following the above steps, download the
 source code by running the following command.
 
-    .. code-block:: bashsession
+    .. code-block:: console
         
         $ git clone https://github.com/jdahm/pyxflow.git
 
@@ -54,7 +56,7 @@ This will create a folder called `pyxflow` as a subdirectory of your current
 working directory.  Before compiling, a configuration script must be run.  In
 most cases, simply run the following.
 
-    .. code-block:: bashsession
+    .. code-block:: console
 
         $ cd pyxflow
         $ ./configure -xflow path/to/xflow
@@ -64,7 +66,7 @@ If the path to XFlow is `/home/user/xflow` (replacing `user` with your
 username) or if it matches the value of `$HOME/xflow`, the commands can be
 further simplified.
 
-    .. code-block:: bashsession
+    .. code-block:: console
 
         $ cd pyxflow
         $ ./configure
