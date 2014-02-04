@@ -6,7 +6,7 @@ Plot
 ===================
 
 .. autoclass:: pyxflow.Plot.xf_Plot
-    :members: PlotMesh
+    :members: __init__, PlotMesh
 
 .. automodule:: pyxflow.Plot
-    :members:
+    :members: GetXLims

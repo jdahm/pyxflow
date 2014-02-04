@@ -1,8 +1,9 @@
-# Import plotting functions
-import matplotlib.pyplot as plt
+
 # Background pyxflow module
 from . import _pyxflow as px
 
+# Import plotting functions
+import matplotlib.pyplot as plt
 # Line collection
 from matplotlib.collections import LineCollection
 # Color conversion
@@ -10,28 +11,39 @@ from matplotlib.colors import colorConverter
 # Import the customizable colormap class
 from matplotlib.colors import LinearSegmentedColormap
 
+# Variable testing
+from numpy import isscalar
+
 # Class for xf_Plot objects
 class xf_Plot:
 
     # Class initialization file.
-    def __init__(self, All=None, fname=None, **kwargs):
+    def __init__(self, All=None, Mesh=None, **kwargs):
         """
-        h_p = xf_Plot(All=None, fname=None, **kwargs)
+        Create a :class:`pyxflow.Plot.xf_Plot` object.
+        
+        :Call:
+            >>> h_p = xf_Plot(All=None, Mesh=None, **kwargs)
 
-        INPUTS:
-           All   : xf_All object
-           fname : path to a '.xfa' file
+        :Parameters:
+            All : :class:`pyxflow.All.xf_All`
+                Instance of XFlow all object containing mesh and solution
+            Mesh : :class:`pyxflow.Mesh.xf_Mesh`
+                Object used for plotting mesh without a solution
 
-        OUTPUTS:
-           h_p   : instance of xf_Plot class
+        :Returns:
+            h_p : :class:`pyxflow.Plot.xf_Plot`
+                Plot object with various properties
 
-        KEYWORD ARGUMENTS:
-           (See xf_Plot.Plot)
+        :Kwargs:
+            
+            
+            See also :func:`pyxflow.Plot.GetXLims`
         """
-
-        # Load the xf_All object if not given directly.
-        if All is None:
-            All = xf_All(fname)
+            
+        # Extract the mesh.
+        if All is not None and Mesh is None:
+            Mesh = All.Mesh
 
         # Initialize some handles.
         self.figure = None
@@ -41,7 +53,7 @@ class xf_Plot:
 
         # Produce the initial plot.
         #self.Plot(All, **kwargs)
-        self.PlotMesh(All.Mesh, **kwargs)
+        self.PlotMesh(Mesh, **kwargs)
 
     # Method to draw the scalar plot
     def Plot(self, All, xyrange=None, vgroup='State', scalar=None, **kwargs):
@@ -219,26 +231,8 @@ class xf_Plot:
                 Interpolation order for mesh faces
             line_options : dict
                 Options for matplotlib.pyplot.LineCollection
-            xmin : float, array
-                Minimum `x`-coordinate for plot window or array of minimum
-                coordinates
-            xmax : float, array
-                Maximum `x`-coordinate for plot window or array of maximum
-                coordinates
-            xlim : array
-                Minimum and maximum `x` coordinates or [`xmin`, `xmax`, `ymin`, ...]
-            ymin : float
-                Minimum `y`-coordinate for plot window
-            ymax : float
-                Maximum `y`-coordinate for plot window
-            ylim : array
-                List of [`ymin`, `ymax`]
-            zmin : float
-                Minimum `z`-coordinate for plot window
-            zmax : float
-                Maximum `z`-coordinate for plot window
-            zlim : array
-                List of [`zmin`, `zmax`]
+                
+            See also kwargs for :func:`pyxflow.Plot.GetXLims`
         
         
         """
@@ -439,11 +433,70 @@ def set_colormap(h, colorList):
     # Return nothing
     return None
     
+    
+# Function to give 1 for scalar and number of elements for arrays
+def numel(x):
+    """
+    Return number of elements in a list or `1` for a scalar.
+    
+    This function is still not nearly as useful as MATLAB's `numel` function.
+    
+    :Call:
+        >>> n = numel(x)
+    
+    :Parameters:
+        x : float, int, array, list
+            Any variable for which `len` should be defined but might not be
+    
+    :Returns:
+        n : int
+            Number of elements in `x`
+    """
+    # Check for scalars (which have numel==1 for ... Python is so frustrating.
+    if isscalar(x):
+        return 1
+    else:
+        return len(x)
 
 # Function to process various descriptions of the plot bounding box
 def GetXLims(Mesh, **kwargs):
     """
+    Process a mesh and a list of optional arguments to create a bounding box.
     
+    :Call:
+        >>> xLimMin, xLimMax = GetXLims(Mesh, **kwargs)
+        
+    :Parameters:
+        Mesh : :class:`pyxflow.Mesh.xf_Mesh`
+            Instance of mesh to use for dimension count and default bounds
+            
+    :Returns:
+        xLimMin : (`Mesh.Dim`) numpy.array
+            Minimum coordinate for each dimension
+        xLimMax : (`Mesh.Dim`) numpy.array
+            Maximum coordinate for each dimension
+            
+    :Kwargs:
+        xmin : float, array
+            Minimum `x`-coordinate for plot window or array of minimum
+            coordinates
+        xmax : float, array
+            Maximum `x`-coordinate for plot window or array of maximum
+            coordinates
+        xlim : array
+            Minimum and maximum `x` coordinates or [`xmin`, `xmax`, `ymin`, ...]
+        ymin : float
+            Minimum `y`-coordinate for plot window
+        ymax : float
+            Maximum `y`-coordinate for plot window
+        ylim : array
+            List of [`ymin`, `ymax`]
+        zmin : float
+            Minimum `z`-coordinate for plot window
+        zmax : float
+            Maximum `z`-coordinate for plot window
+        zlim : array
+            List of [`zmin`, `zmax`]
     """
     # Initialize coordinate limits.
     xLimMin = [None for i in range(Mesh.Dim)]
@@ -452,20 +505,20 @@ def GetXLims(Mesh, **kwargs):
     if kwargs.get('xmin') is not None:
         xmin = kwargs['xmin']
         # Check the dimensions.
-        if len(xmin) == Mesh.Dim:
+        if numel(xmin) == Mesh.Dim:
             xLimMin = xmin
     # Lowest priority: list of xmins
     if kwargs.get('xmax') is not None:
         xmax = kwargs['xmax']
         # Check the dimensions.
-        if len(xmax) == Mesh.Dim:
+        if numel(xmax) == Mesh.Dim:
             xLimMax = xmax
             
     # Next priority: full list
     if kwargs.get('xlim') is not None:
         xlim = kwargs['xlim']
         # Check the dimensions.
-        if len(xlim) == 2*Mesh.Dim:
+        if numel(xlim) == 2*Mesh.Dim:
             # Get every other element.
             xLimMin = xlim[0::2]
             xLimMax = xlim[1::2]
@@ -474,19 +527,19 @@ def GetXLims(Mesh, **kwargs):
     if kwargs.get('xlim') is not None:
         xlim = kwargs['xlim']
         # Check the dimensions.
-        if len(xlim)==2 and Mesh.Dim>1:
+        if numel(xlim)==2 and Mesh.Dim>1:
             xLimMin[0] = xlim[0]
             xLimMax[0] = xlim[1]
     if kwargs.get('ylim') is not None:
         ylim = kwargs['ylim']
         # Check if it's appropriate.
-        if len(ylim)==2 and Mesh.Dim>1:
+        if numel(ylim)==2 and Mesh.Dim>1:
             xLimMin[1] = ylim[0]
             xLimMax[1] = ylim[1]
     if kwargs.get('zlim') is not None:
         zlim = kwargs['zlim']
         # Check if it's appropriate.
-        if len(zlim)==2 and Mesh.Dim>2:
+        if numel(zlim)==2 and Mesh.Dim>2:
             xLimMin[2] = zlim[0]
             xLimMax[2] = zlim[1]
             
@@ -494,32 +547,32 @@ def GetXLims(Mesh, **kwargs):
     if kwargs.get('xmin') is not None:
         xmin = kwargs['xmin']
         # Check for a scalar (and relevance).
-        if len(xmin)==1 and Mesh.Dim>1:
+        if numel(xmin)==1 and Mesh.Dim>1:
             xLimMin[0] = xmin
     if kwargs.get('xmax') is not None:
         xmax = kwargs['xmax']
         # Check for a scalar (and relevance).
-        if len(xmax)==1 and Mesh.Dim>1:
+        if numel(xmax)==1 and Mesh.Dim>1:
             xLimMax[0] = xmax
     if kwargs.get('ymin') is not None:
         ymin = kwargs['ymin']
         # Check for a scalar.
-        if len(ymin)==1:
+        if numel(ymin)==1:
             xLimMin[1] = ymin
     if kwargs.get('ymax') is not None:
         ymax = kwargs['ymax']
         # Check for a scalar.
-        if len(ymax)==1:
+        if numel(ymax)==1:
             xLimMax[1] = ymax
     if kwargs.get('zmin') is not None:
         zmin = kwargs['zmin']
         # Check for a scalar.
-        if len(zmin)==1:
+        if numel(zmin)==1:
             xLimMin[2] = zmin
     if kwargs.get('zmax') is not None:
         zmax = kwargs['zmax']
         # Check for a scalar.
-        if len(zmax)==1:
+        if numel(zmax)==1:
             xLimMax[2] = zmax
 
     # Get the defaults based on all mesh coordinates.
