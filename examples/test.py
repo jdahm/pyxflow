@@ -14,8 +14,8 @@ E = A.EqnSet
 UG = A.GetPrimalState()
 U = UG.GetVector("ElemState")
 
-#f = M.Plot(xmin=[-0.1, -0.5], xmax=[1.1, 0.5])
-h = A.Plot(xlim=[-0.1,1.1], ylim=[-0.5,0.5])
+f = M.Plot(xmin=[-0.1, -0.5], xmax=[1.1, 0.5])
+#h = A.Plot(xlim=[-0.1,1.1], ylim=[-0.5,0.5])
 #f = U.Plot(M, E, figure=f, xmin=[-0.1, -0.5], xmax=[1.1, 0.5], scalar="XMomentum")
 plt.show()
 #f.savefig("figure.pdf", bbox_inches='tight')

@@ -12,6 +12,9 @@ import pyxflow._pyxflow as px
 import matplotlib.pyplot as plt
 from matplotlib.tri import Triangulation
 
+# Import plotting methods
+import pyxflow.Plot
+
 # ------- Class for xf_Geom objects -------
 
 
@@ -199,25 +202,41 @@ class xf_Vector:
         # Get the GenArrays
         self.GenArray = GA
         self.GenArray = [xf_GenArray(G) for G in GA]
-
-    def Plot(self, Mesh, EqnSet, **kwargs):
+    
+    # Plotting method
+    def Plot(self, Mesh, EqnSet, plot=None, **kwargs):
+        """
+        Plot a scalar
+        
+        :Call:
+            >>> plot = V.Plot(Mesh, EqnSet, plot=None, **kwargs)
+            
+        :Parameters:
+            V: :class:`pyxflow.DataSet.xf_Vector`
+                Vector containing scalar data to plot
+            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+                Mesh for geometry data required for plotting
+            EqnSet: :class:`pyxflow.EqnSet.xf_EqnSet`
+                Equation set data
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+                
+        :Returns:
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+            
+        :Kwargs:
+            order: int
+                Interpolation order for mesh faces
+            line_options: dict
+                Options for matplotlib.pyplot.LineCollection
+                
+            See also kwargs for :func:`pyxflow.Plot.GetXLims`
+        """
+        # Mesh dimension
         dim = Mesh.Dim
-
-        if kwargs.get('xmin') is not None:
-            xmin = kwargs['xmin']
-        else:
-            xmin = [None for i in range(dim)]
-
-        if kwargs.get('xmax') is not None:
-            xmax = kwargs['xmax']
-        else:
-            xmax = [None for i in range(dim)]
-
-        for i in range(dim):
-            if xmin[i] is None:
-                xmin[i] = Mesh.Coord[:, i].min()
-            if xmax[i] is None:
-                xmax[i] = Mesh.Coord[:, i].max()
+        # Get the dimensions
+        xmin, xmax = pyxflow.Plot.GetXLims(Mesh, **kwargs)
 
         if kwargs.get('figure') is not None:
             self.figure = kwargs['figure']

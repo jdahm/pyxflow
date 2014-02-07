@@ -2,6 +2,7 @@
 
 # Versions:
 #  2013-09-22 @dalle   : First version
+#  2014-02-07 @dalle   : Integrated @jdahm's plot methods
 
 
 # ------- Modules required -------
@@ -12,6 +13,9 @@ from . import _pyxflow as px
 # Matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+
+# Import the plot class
+import pyxflow.Plot
 
 # ------- CLASSES -------
 # --- Class to represent the (full) mesh ---
@@ -107,122 +111,95 @@ class xf_Mesh:
             px.DestroyMesh(self._ptr)
 
     # Plot method for mesh
-    def Plot(self, **kwargs):
-        """
-        Mesh plotting method
+    def Plot(self, plot=None, **kwargs):
+        """Create a plot for an :class:`xf_Mesh` object.
+        
+        Elements that do not have at least one node with a coordinate between
+        `xmin[i]` and `xmax[i]`, for `i` corresponding to each dimension in the
+        mesh, are not plotted.
+        
+        :Call:
+            >>> plot = Mesh.Plot(plot=None, **kwargs)
+        
+        :Parameters:
+            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+                Mesh to be plotted
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                Overall mesh handle to plot
+                
+        :Returns:
+            plot : :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+            
+        :Kwargs:
+            order: int
+                Interpolation order for mesh faces
+            line_options: dict
+                Options for matplotlib.pyplot.LineCollection
+                
+            See also kwargs for :func:`pyxflow.Plot.GetXLims`
+        
+        
         """
         
-        # Initialize coordinate limits.
-        xLimMin = [None for i in range(self.Dim)]
-        xLimMax = [None for i in range(self.Dim)]
-        # Lowest priority: list of xmins
-        if kwargs.get('xmin') is not None:
-            xmin = kwargs['xmin']
-            # Check the dimensions.
-            if len(xmin) == self.Dim:
-                xLimMin = xmin
-        # Lowest priority: list of xmins
-        if kwargs.get('xmax') is not None:
-            xmax = kwargs['xmax']
-            # Check the dimensions.
-            if len(xmax) == self.Dim:
-                xLimMax = xmax
-                
-        # Next priority: full list
-        if kwargs.get('xlim') is not None:
-            xlim = kwargs['xlim']
-            # Check the dimensions.
-            if len(xlim) == 2*self.Dim:
-                # Get every other element.
-                xLimMin = xlim[0::2]
-                xLimMax = xlim[1::2]
-                
-        # Second priority, individual limits
-        if kwargs.get('xlim') is not None:
-            xlim = kwargs['xlim']
-            # Check the dimensions.
-            if len(xlim)==2 and self.Dim>1:
-                xLimMin[0] = xlim[0]
-                xLimMax[0] = xlim[1]
-        if kwargs.get('ylim') is not None:
-            ylim = kwargs['ylim']
-            # Check if it's appropriate.
-            if len(ylim)==2 and self.Dim>1:
-                xLimMin[1] = ylim[0]
-                xLimMax[1] = ylim[1]
-        if kwargs.get('zlim') is not None:
-            zlim = kwargs['zlim']
-            # Check if it's appropriate.
-            if len(zlim)==2 and self.Dim>2:
-                xLimMin[2] = zlim[0]
-                xLimMax[2] = zlim[1]
-                
-        # Top priority: individual mins and maxes overrule other inputs.
-        if kwargs.get('xmin') is not None:
-            xmin = kwargs['xmin']
-            # Check for a scalar (and relevance).
-            if len(xmin)==1 and self.Dim>1:
-                xLimMin[0] = xmin
-        if kwargs.get('xmax') is not None:
-            xmax = kwargs['xmax']
-            # Check for a scalar (and relevance).
-            if len(xmax)==1 and self.Dim>1:
-                xLimMax[0] = xmax
-        if kwargs.get('ymin') is not None:
-            ymin = kwargs['ymin']
-            # Check for a scalar.
-            if len(ymin)==1:
-                xLimMin[1] = ymin
-        if kwargs.get('ymax') is not None:
-            ymax = kwargs['ymax']
-            # Check for a scalar.
-            if len(ymax)==1:
-                xLimMax[1] = ymax
-        if kwargs.get('zmin') is not None:
-            zmin = kwargs['zmin']
-            # Check for a scalar.
-            if len(zmin)==1:
-                xLimMin[2] = zmin
-        if kwargs.get('zmax') is not None:
-            zmax = kwargs['zmax']
-            # Check for a scalar.
-            if len(zmax)==1:
-                xLimMax[2] = zmax
-
-        # Get the defaults based on all mesh coordinates.
-        for i in range(self.Dim):
-            if xLimMin[i] is None:
-                xLimMin[i] = self.Coord[:, i].min()
-            if xLimMax[i] is None:
-                xLimMax[i] = self.Coord[:, i].max()
-
+        # Get the limits based on the Mesh and keyword args
+        xLimMin, xLimMax = pyxflow.Plot.GetXLims(self, **kwargs)
+        # Process the plot.
+        if plot is None:
+            # Initialize a plot.
+            plot = pyxflow.Plot.xf_Plot()
+        elif not isinstance(plot, pyxflow.Plot.xf_Plot):
+            raise IOError("Plot handle must be instance of " +
+                "pyxflow.plot.xf_Plot")
+        
+        # Check for an existing mesh plot.
+        if plot.mesh is not None:
+            # Delete it!
+            plot.mesh.remove()
+        # Determine what figure to use.
         if kwargs.get('figure') is not None:
-            self.figure = kwargs['figure']
-        else:
-            self.figure = plt.figure()
-
+            # Use the input figure.
+            plot.figure = kwargs['figure']
+        elif plot.figure is None:
+            # Follow norms of plotting programs; default is gcf().
+            plot.figure = plt.gcf()
+        # Determine what axes to use.
         if kwargs.get('axes') is not None:
-            self.axes = kwargs['axes']
+            # Use the input value.
+            plot.axes = kwargs['axes']
         else:
-            self.axes = self.figure.gca()
-
+            # Normal plotting conventions for default
+            plot.axes = plt.gca()
+        # Plot order; apparently None leads to default below?
         Order = kwargs.get('order')
 
+        # Get the plot data for each element.
+        # Don't worry, eventually someone will explain what the hell c is.
+        # It's a list of the node indices in each mesh element.
         x, y, c = px.MeshPlotData(self._ptr, xLimMin, xLimMax, Order)
+        # Turn this into a list of coordinates.
         s = []
         for f in range(len(c) - 1):
-            s.append(zip(x[c[f]:c[f + 1]], y[c[f]:c[f + 1]]))
+            s.append(zip(x[c[f]:c[f+1]], y[c[f]:c[f+1]]))
 
+        # Get any options that should be applied to the actual plot.
         line_options = kwargs.get('line_options', {})
-
-        c = LineCollection(s, colors=(0, 0, 0, 1), **line_options)
-        self.axes.add_collection(c)
-
+        # Set the default color.
+        line_options.setdefault('colors', (0,0,0,1))
+        # Create the lines efficiently.
+        hl = LineCollection(s, **line_options)
+        # Plot them.
+        plot.axes.add_collection(hl)
+        # Apply the bounding box that was created earlier.
         if kwargs.get('reset_limits', True):
-            self.axes.set_xlim(xmin[0], xmax[0])
-            self.axes.set_ylim(xmin[1], xmax[1])
-
-        return self.figure
+            plot.axes.set_xlim(xLimMin[0], xLimMax[0])
+            plot.axes.set_ylim(xLimMin[1], xLimMax[1])
+        # Store the handle to the line collection.
+        plot.mesh = hl
+        # Draw if necessary.
+        if plt.isinteractive():
+            plt.draw()
+        
 
 
 # --- Class for boundary face groups ---

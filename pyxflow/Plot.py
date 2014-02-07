@@ -26,13 +26,13 @@ class xf_Plot:
             >>> h_p = xf_Plot(All=None, Mesh=None, **kwargs)
 
         :Parameters:
-            All : :class:`pyxflow.All.xf_All`
+            All: :class:`pyxflow.All.xf_All`
                 Instance of XFlow all object containing mesh and solution
-            Mesh : :class:`pyxflow.Mesh.xf_Mesh`
+            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
                 Object used for plotting mesh without a solution
 
         :Returns:
-            h_p : :class:`pyxflow.Plot.xf_Plot`
+            h_p: :class:`pyxflow.Plot.xf_Plot`
                 Plot object with various properties
 
         :Kwargs:
@@ -48,227 +48,16 @@ class xf_Plot:
         # Initialize some handles.
         self.figure = None
         self.axes = None
-        self.Scalar = None
-        self.Mesh = None
-
+        self.scalar = None
+        self.mesh = None
+        self.contour = None
+        
+        # Plot things if requested.
+        if isinstance(Mesh, pyxflow.Mesh.xf_Mesh):
+            Mesh.Plot()
         # Produce the initial plot.
         #self.Plot(All, **kwargs)
-        self.PlotMesh(Mesh, **kwargs)
-
-    # Method to draw the scalar plot
-    def Plot(self, All, xyrange=None, vgroup='State', scalar=None, **kwargs):
-        """
-        h_p = xf_Plot.Plot(All, xyrange=None, vgroup='State', scalar=None, **kwargs)
-
-        INPUTS:
-           All     : xf_All object
-           xyrange : list of coordinates to plot (Note 1)
-           vgroup  : title of vector group to use
-           scalar  : name of scalar to plot (Note 2)
-
-        OUTPUTS:
-           h_t : <matplotlib.pyplot.tripcolor> instance
-
-        KEYWORD ARGUMENTS:
-           mesh      : flag to draw a mesh
-           AutoScale : automatically resize figure to fit data range
-
-
-        This is the plotting method for the xf_All class.  More capabilities
-        will be added.
-
-        NOTES:
-           (1) The 'xyrange' keyword is specified in the form
-
-                   [xmin, xmax, ymin, ymax]
-
-               However, inputs such as `xyrange=(0,0,None,None)` are also
-               acceptable.  In this case, the minimum value for both
-               coordinates will be zero, but no maximum value will be
-               specified.  Furthermore, alternate keys 'xmin', 'xmax', etc.
-               override the values specified in 'range'.
-
-           (2) The 'scalar' keyword may be any state that's in the cell
-               interior list of states.  If the equation set is Navier-Stokes,
-               the options Mach number, entropy, and pressure are also
-               available.
-        """
-        # Versions:
-        #  2013-09-29 @dalle   : First version
-
-        # Check for a DataSet
-        if not (All.DataSet.nData >= 1):
-            raise IndexError("No DataSet found.")
-        # Check that we have a vector group.
-        if not (All.DataSet.Data[0].Type == 'VectorGroup'):
-            raise TypeError("DataSet is not a xf_VectorGroup instance.")
-        # This is for 2D right now!
-        if All.Mesh.Dim != 2:
-            raise NotImplementedError("3D plotting is not implemented.")
-
-        # Process dimension kwargs.
-        xmin = kwargs.get('xmin')
-        xmax = kwargs.get('xmax')
-        ymin = kwargs.get('ymin')
-        ymax = kwargs.get('ymax')
-
-        # Process the window for plotting.
-        if xyrange is not None:
-            # Don't override values directly specified.
-            if xmin is None:
-                xmin = xyrange[0]
-            if xmax is None:
-                xmax = xyrange[1]
-            if ymin is None:
-                ymin = xyrange[2]
-            if ymax is None:
-                ymax = xyrange[3]
-        # Make sure the values are not None before handing to C function.
-        if xmin is None:
-            xmin = All.Mesh.Coord[:, 0].min()
-        if xmax is None:
-            xmax = All.Mesh.Coord[:, 0].max()
-        if ymin is None:
-            ymin = All.Mesh.Coord[:, 1].min()
-        if ymax is None:
-            ymax = All.Mesh.Coord[:, 1].max()
-
-        # Get the titles of the vector groups available.
-        UG_Titles = [D.Title for D in All.DataSet.Data]
-        # Check for the requested vector group.
-        if vgroup in UG_Titles:
-            # Get the matching vector group.
-            UG = All.DataSet.Data[UG_Titles.index(vgroup)].Data
-        elif vgroup is None:
-            # Get the first vector group.
-            UG = All.DataSet.Data[0].Data
-        else:
-            # Error
-            raise RuntimeError(
-                "Unrecognized DataSet title '{}'".format(vgroup))
-
-        # Limits on plot window
-        xlim = [xmin, xmax, ymin, ymax]
-        # Save the limits.
-        self.xlim = xlim
-        Order = kwargs.get('order')
-
-        x, y, c = px.MeshPlotData(self._ptr, xmin, xmax, Order)
-        
-        # Get the calculated vector, triangulation, and mesh lines.
-        X, u, T, L = px.PlotData(All._ptr, UG._ptr, xlim)
-        
-        # Convert mesh lines to NumPy array.
-        L = np.asarray(L)
-
-        # Pull the first vector.
-        U = UG.Vector[0]
-        # Get the scalar.
-        M = U.get_scalar(u, scalar)
-
-        # Draw the requested scalar.
-        h_t = plt.tripcolor(X[:, 0], X[:, 1], T, M, shading='gouraud')
-
-        # Save the figure and axis handles.
-        if kwargs.get('figure') is not None:
-            self.figure = kwargs['figure']
-        else:
-            self.figure = plt.figure()
-
-        if kwargs.get('axes') is not None:
-            self.axes = kwargs['axes']
-        else:
-            self.axes = self.figure.gca()
-
-        # Check for a grid.
-        if kwargs.get('mesh', True) is True:
-            # Nx2 matrix of xy-coordinates for each element
-            xx = (X[j, :] for j in L)
-            # Make a collection of lines with the same properties.
-            h_l = LineCollection(xx, linewidths=0.2, colors=(0, 0, 0, 1))
-            # Add all the lines at once.
-            plt.gca().add_collection(h_l)
-            # Save the handle.
-            self.mesh = h_l
-        else:
-            # Save an empty handle.
-            self.mesh = None
-
-        # Check whether or not to fill the window
-        if kwargs.get('fill', False) is True:
-            self.FillWindow()
-
-        # Autoscale the figure window.
-        if kwargs.get('AutoScale', True) is True:
-            self.AutoScale()
-
-        # return the handle
-        self.state = h_t
-        
-    
-    # Plot method for mesh
-    def PlotMesh(self, Mesh, **kwargs):
-        """Create a plot for an xf_Mesh object.
-        
-        Elements that do not have at least one node with a coordinate between
-        `xmin[i]` and `xmax[i]`, for `i` corresponding to each dimension in the
-        mesh, are not plotted.
-        
-        :Call:
-            >>> h_p.PlotMesh(Mesh, **kwargs)
-        
-        :Parameters:
-            h_p : :class:`pyxflow.Plot.xf_Plot`
-                Instance of plot class (plot handle)
-            Mesh : :class:`pyxflow.Mesh.xf_Mesh`
-                Mesh to be plotted
-                
-        :Returns:
-            `None`
-            
-        :Kwargs:
-            order : int
-                Interpolation order for mesh faces
-            line_options : dict
-                Options for matplotlib.pyplot.LineCollection
-                
-            See also kwargs for :func:`pyxflow.Plot.GetXLims`
-        
-        
-        """
-        
-        # Get the limits based on the Mesh and keyword args
-        xLimMin, xLimMax = GetXLims(Mesh, **kwargs)
-
-        if kwargs.get('figure') is not None:
-            self.figure = kwargs['figure']
-        else:
-            self.figure = plt.figure()
-
-        if kwargs.get('axes') is not None:
-            self.axes = kwargs['axes']
-        else:
-            self.axes = self.figure.gca()
-
-        Order = kwargs.get('order')
-
-        x, y, c = px.MeshPlotData(Mesh._ptr, xLimMin, xLimMax, Order)
-        s = []
-        for f in range(len(c) - 1):
-            s.append(zip(x[c[f]:c[f + 1]], y[c[f]:c[f + 1]]))
-
-        line_options = kwargs.get('line_options', {})
-
-        c = LineCollection(s, colors=(0, 0, 0, 1), **line_options)
-        self.axes.add_collection(c)
-
-        if kwargs.get('reset_limits', True):
-            self.axes.set_xlim(xLimMin[0], xLimMax[0])
-            self.axes.set_ylim(xLimMin[1], xLimMax[1])
-
-        self.Mesh = c
-    
-    
+        #self.PlotMesh(Mesh, **kwargs)
     
 
     # Method to make plot fill the window
@@ -298,6 +87,7 @@ class xf_Plot:
             plt.draw()
 
         return None
+        
 
     # Method to draw a NEW figure at the correct size
     def AutoScale(self):
