@@ -48,17 +48,28 @@ class xf_Plot:
         # Initialize some handles.
         self.figure = None
         self.axes = None
-        self.scalar = None
         self.mesh = None
+        self.scalar = None
         self.contour = None
+        # Store the limits.
+        self.xmin = None
+        self.xmax = None
         
         # Plot things if requested.
-        if isinstance(Mesh, pyxflow.Mesh.xf_Mesh):
+        # Note: Mesh=False hides the mesh if a valid All is given.
+        if hasattr(Mesh, 'Coord'):
             Mesh.Plot()
         # Produce the initial plot.
         #self.Plot(All, **kwargs)
         #self.PlotMesh(Mesh, **kwargs)
     
+    # Method to remove the plot (or parts of it).
+    def remove():
+        """
+        
+        """
+        return None
+        
 
     # Method to make plot fill the window
     def FillWindow(self):
@@ -245,6 +256,8 @@ def numel(x):
     # Check for scalars (which have numel==1 for ... Python is so frustrating.
     if isscalar(x):
         return 1
+    elif x is None:
+        return 0
     else:
         return len(x)
 
@@ -257,37 +270,49 @@ def GetXLims(Mesh, **kwargs):
         >>> xLimMin, xLimMax = GetXLims(Mesh, **kwargs)
         
     :Parameters:
-        Mesh : :class:`pyxflow.Mesh.xf_Mesh`
+        Mesh: :class:`pyxflow.Mesh.xf_Mesh`
             Instance of mesh to use for dimension count and default bounds
             
     :Returns:
-        xLimMin : (`Mesh.Dim`) numpy.array
+        xLimMin: (`Mesh.Dim`) numpy.array
             Minimum coordinate for each dimension
-        xLimMax : (`Mesh.Dim`) numpy.array
+        xLimMax: (`Mesh.Dim`) numpy.array
             Maximum coordinate for each dimension
             
     :Kwargs:
-        xmin : float, array
+        xmin: float, array
             Minimum `x`-coordinate for plot window or array of minimum
             coordinates
-        xmax : float, array
+        xmax: float, array
             Maximum `x`-coordinate for plot window or array of maximum
             coordinates
-        xlim : array
+        xlim: array
             Minimum and maximum `x` coordinates or [`xmin`, `xmax`, `ymin`, ...]
-        ymin : float
+        ymin: float
             Minimum `y`-coordinate for plot window
-        ymax : float
+        ymax: float
             Maximum `y`-coordinate for plot window
-        ylim : array
+        ylim: array
             List of [`ymin`, `ymax`]
-        zmin : float
+        zmin: float
             Minimum `z`-coordinate for plot window
-        zmax : float
+        zmax: float
             Maximum `z`-coordinate for plot window
-        zlim : array
+        zlim: array
             List of [`zmin`, `zmax`]
+        xmindef: array
+            List of default min coordinates to use instead of inspecting `Mesh`
+        xmaxdef: array
+            List of default max coordinates to use instead of inspecting `Mesh`
     """
+    # Check for default values not based on the mesh.
+    xMinDef = kwargs.get('xmindef')
+    xMaxDef = kwargs.get('xmaxdef')
+    # Base off of mesh if necessary.
+    if xMinDef is None:
+        xMinDef = [Mesh.Coord[:,i].min() for i in range(Mesh.Dim)]
+    if xMaxDef is None:
+        xMaxDef = [Mesh.Coord[:,i].max() for i in range(Mesh.Dim)]
     # Initialize coordinate limits.
     xLimMin = [None for i in range(Mesh.Dim)]
     xLimMax = [None for i in range(Mesh.Dim)]
@@ -368,9 +393,9 @@ def GetXLims(Mesh, **kwargs):
     # Get the defaults based on all mesh coordinates.
     for i in range(Mesh.Dim):
         if xLimMin[i] is None:
-            xLimMin[i] = Mesh.Coord[:, i].min()
+            xLimMin[i] = xMinDef[i]
         if xLimMax[i] is None:
-            xLimMax[i] = Mesh.Coord[:, i].max()
+            xLimMax[i] = xMaxDef[i]
                 
     # Output the limits.
     return xLimMin, xLimMax

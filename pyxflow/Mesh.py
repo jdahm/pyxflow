@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
 # Import the plot class
-import pyxflow.Plot
+from pyxflow.Plot import xf_Plot, GetXLims
 
 # ------- CLASSES -------
 # --- Class to represent the (full) mesh ---
@@ -142,15 +142,21 @@ class xf_Mesh:
         
         """
         
-        # Get the limits based on the Mesh and keyword args
-        xLimMin, xLimMax = pyxflow.Plot.GetXLims(self, **kwargs)
         # Process the plot.
         if plot is None:
             # Initialize a plot.
-            plot = pyxflow.Plot.xf_Plot()
-        elif not isinstance(plot, pyxflow.Plot.xf_Plot):
+            plot = xf_Plot()
+        elif not isinstance(plot, xf_Plot):
             raise IOError("Plot handle must be instance of " +
                 "pyxflow.plot.xf_Plot")
+        # Use specified defaults for plot window if they exist.
+        kwargs.setdefault('xmindef', plot.xmin)
+        kwargs.setdefault('xmaxdef', plot.xmax)
+        # Get the limits based on the Mesh and keyword args
+        xLimMin, xLimMax = GetXLims(self, **kwargs)
+        # Save the plot limits.
+        plot.xmin = xLimMin
+        plot.xmax = xLimMax
         
         # Check for an existing mesh plot.
         if plot.mesh is not None:
@@ -199,6 +205,8 @@ class xf_Mesh:
         # Draw if necessary.
         if plt.isinteractive():
             plt.draw()
+        # Return the plot handle.
+        return plot
         
 
 

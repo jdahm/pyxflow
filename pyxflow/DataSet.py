@@ -235,40 +235,69 @@ class xf_Vector:
         """
         # Mesh dimension
         dim = Mesh.Dim
-        # Get the dimensions
+        # Process the plot.
+        if plot is None:
+            # Initialize a plot.
+            plot = pyxflow.Plot.xf_Plot()
+        elif not isinstance(plot, pyxflow.Plot.xf_Plot):
+            raise IOError("Plot handle must be instance of " +
+                "pyxflow.plot.xf_Plot")
+        # Use specified defaults for plot window if they exist.
+        kwargs.setdefault('xmindef', plot.xmin)
+        kwargs.setdefault('xmaxdef', plot.xmax)
+        # Get the limits based on the Mesh and keyword args
         xmin, xmax = pyxflow.Plot.GetXLims(Mesh, **kwargs)
-
+        # Save the plot limits.
+        plot.xmin = xmin
+        plot.xmax = xmax
+            
+        # Check for an existing mesh plot.
+        if plot.scalar is not None:
+            # Delete it!
+            plot.scalar.remove()
+        # Determine what figure to use.
         if kwargs.get('figure') is not None:
-            self.figure = kwargs['figure']
-        else:
-            self.figure = plt.figure()
-
+            # Use the input figure.
+            plot.figure = kwargs['figure']
+        elif plot.figure is None:
+            # Follow norms of plotting programs; default is gcf().
+            plot.figure = plt.gcf()
+        # Determine what axes to use.
         if kwargs.get('axes') is not None:
-            self.axes = kwargs['axes']
+            # Use the input value.
+            plot.axes = kwargs['axes']
         else:
-            self.axes = self.figure.gca()
-
+            # Normal plotting conventions for default
+            plot.axes = plt.gca()
+        # Plot order; apparently None leads to default below?
         Order = kwargs.get('order')
-
+        # Scalar name; break on default
         Name = kwargs.get('scalar')
-
+        # Process the colormap option...
         colormap = kwargs.get('colormap', plt.cm.jet)
-
+        # Get the mesh nodes and subnodes and their scalar values.
         x, y, tri, scalar = px.ScalarPlotData(
             self._ptr, Mesh._ptr, EqnSet._ptr, Name, xmin, xmax, Order)
-
+        # Check the dimension.
         if dim > 1:
+            # Create a set of triangles with gradient colors.
             T = Triangulation(x, y, triangles=tri)
-            p = self.axes.tripcolor(T, scalar, shading='gouraud', cmap=colormap)
-            self.figure.colorbar(p)
+            p = plot.axes.tripcolor(T, scalar, shading='gouraud', cmap=colormap)
+            # Store the tripcolor handle.
+            plot.scalar = p
         else:
-            self.axes.plot(x, scalar)
-
+            # Plot the value versus x.
+            plot.scalar = plot.axes.plot(x, scalar)
+        # Apply the bounding box that was created earlier.
         if kwargs.get('reset_limits', True):
-            self.axes.set_xlim(xmin[0], xmax[0])
-            self.axes.set_ylim(xmin[1], xmax[1])
-
-        return self.figure
+            plot.axes.set_xlim(xmin[0], xmax[0])
+            if dim > 1:
+                plot.axes.set_ylim(xmin[1], xmax[1])
+        # Draw if necessary.
+        if plt.isinteractive():
+            plt.draw()
+        # Return the plot.
+        return plot
 
 
 # ---- Class for xf_GenArray ----
