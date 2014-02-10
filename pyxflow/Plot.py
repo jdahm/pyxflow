@@ -26,13 +26,13 @@ class xf_Plot:
             >>> h_p = xf_Plot(All=None, Mesh=None, **kwargs)
 
         :Parameters:
-            All: :class:`pyxflow.All.xf_All`
+            *All*: :class:`pyxflow.All.xf_All`
                 Instance of XFlow all object containing mesh and solution
-            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+            *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
                 Object used for plotting mesh without a solution
 
         :Returns:
-            h_p: :class:`pyxflow.Plot.xf_Plot`
+            *h_p*: :class:`pyxflow.Plot.xf_Plot`
                 Plot object with various properties
 
         :Kwargs:

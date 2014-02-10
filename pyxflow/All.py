@@ -38,11 +38,27 @@ class xf_EqnSet:
 
 
 class xf_All:
-
+    """
+    Interface to XFlow xf_All
+    
+    :Call:
+        >>> All = xf_All(fname, DefaultFlag=True)
+    
+    :Parameters:
+        *fname*: :class:`str`
+            Name of file to read (usually ends in ``'.xfa'``)
+        *DefaultFlag*: :class:`bool`
+            Whether or not to use defaults internally
+    
+    :Returns:
+        *All*: :class:`pyxflow.All.xf_All`
+            An instance of the pyXFlow *xf_All* interface
+    """
+    
+    # Initialization method
     def __init__(self, fname, DefaultFlag=True):
         """
-        All = xf_All(fname)
-
+        Initialization method for :class:`pyxflow.All.xf_All`
         """
 
         # Create an xf_All instance in memory
@@ -58,52 +74,78 @@ class xf_All:
         self.EqnSet = xf_EqnSet(EqnSet_ptr)
         self.DataSet = xf_DataSet(ptr=DataSet_ptr)
 
+    # xf_All destructor
     def __del__(self):
+        """
+        Deletion method for :class:`pyxflow.All.xf_All`
+        """
         px.DestroyAll(self._ptr)
 
+    # Method to find the primal state automatically
     def GetPrimalState(self, TimeIndex=0):
+        """
+        Find the primal state from an *xf_All* interface.
+        
+        :Call:
+            >>> UG = All.GetPrimalState(TimeIndex=0)
+        
+        :Parameters:
+            *All*: :class:`pyxflow.All.xf_All`
+                Solution object from which to find primal state
+            *TimeIndex*: :class:`int`
+                Time index from which to find primal state
+        
+        :Returns:
+            *UG*: :class:`pyxflow.DataSet.xf_VectorGroup`
+                Vector group for the primal state
+        """
         ptr = px.GetPrimalState(self._ptr, TimeIndex)
         return xf_VectorGroup(ptr)
 
+    # Master plotting method
     def Plot(self, scalar=None, **kwargs):
         """
-        Plot the mesh and scalar from available data.
+        Plot the mesh and scalar from *xf_All* representation
         
         :Call:
             >>> plot = All.Plot(scalar=None, **kwargs)
 
         :Parameters:
-            All: :class:`pyxflow.All.xf_All`
-                XFlow all object Python representation
-            scalar: str
+            *All*: :class:`pyxflow.All.xf_All`
+                Instance of the pyXFlow *xf_All* interface
+            *scalar*: :class:`str`
                 Name of scalar to plot
-                A value of `None` uses the default scalar.
-                A value of `False` prevents plotting of any scalar.
+                
+                A value of ``None`` uses the default scalar.
+                
+                A value of ``False`` prevents plotting of any scalar.
 
         :Returns:
-            plot: :class:`pyxflow.Plot.xf_Plot`
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
                 pyXFlow plot instance with mesh and scalar handles
         
         :Kwargs:
-            mesh: bool
+            *mesh*: :class:`bool`
                 Whether or not to plot the mesh
-            plot: :class:`pyxflow.Plot.xf_Plot`
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
-            role: str
+            *role*: :class:`str`
                 Identifier for the vector to use for plot
-                The default value is `'ElemState'`.
-            order: int
+                The default value is ``'ElemState'``.
+            *order*: :class:`int`
                 Interpolation order for mesh faces
-            vgroup: :class:`pyxflow.DataSet.xf_VectorGroup`
+            *vgroup*: :class:`pyxflow.DataSet.xf_VectorGroup`
                 Vector group to use for plot
-                A value of `None` results in using the primal state.
+                
+                A value of ``None`` results in using the primal state.
+                
                 The behavior of this keyword argument is subject to change.
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
         
         :See also:
-            :func:`pyxflow.DataSet.xf_Vector.Plot()`
-            :func:`pyxflow.Mesh.xf_Mesh.Plot()`
+            * :func:`pyxflow.DataSet.xf_Vector.Plot()`
+            * :func:`pyxflow.Mesh.xf_Mesh.Plot()`
         """
         # Versions:
         #  2013-09-29 @dalle   : First version
