@@ -135,14 +135,14 @@ class xf_Mesh:
             order: int
                 Interpolation order for mesh faces
             line_options: dict
-                Options for matplotlib.pyplot.LineCollection
+                Options for :class:`matplotlib.pyplot.LineCollection`
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
         
         
         """
         
-        # Process the plot.
+        # Process the plot handle.
         if plot is None:
             # Initialize a plot.
             plot = xf_Plot()

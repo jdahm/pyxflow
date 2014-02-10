@@ -14,8 +14,8 @@ E = A.EqnSet
 UG = A.GetPrimalState()
 U = UG.GetVector("ElemState")
 
-h = M.Plot(xmin=[-0.1, -0.5], xmax=[1.1, 0.5])
-#h = A.Plot(xlim=[-0.1,1.1], ylim=[-0.5,0.5])
-h = U.Plot(M, E, plot=h, scalar="XMomentum")
+#h = M.Plot(xmin=[-0.1, -0.5], xmax=[1.1, 0.5])
+h = A.Plot(scalar="Pressure", xlim=[-0.1,1.1], ylim=[-0.5,0.5])
+#h = UG.Plot(M, E, role="ElemState", scalar="XMomentum", plot=h)
 plt.show()
 #f.savefig("figure.pdf", bbox_inches='tight')

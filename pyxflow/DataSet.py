@@ -164,13 +164,58 @@ class xf_VectorGroup:
         #self.V = V
         self.Vector = [xf_Vector(Vi) for Vi in V]
 
+    # Method to get a plot based on the name of the role.
     def GetVector(self, role="ElemState"):
         _ptr = px.GetVectorFromGroup(self._ptr, role)
         return xf_Vector(_ptr)
+        
+    # Method to plot (passes information to xf_Vector.Plot())
+    def Plot(self, Mesh, EqnSet, role="ElemState", **kwargs):
+        """
+        Plot a scalar from a vector group.
+        
+        :Call:
+            >>> plot = UG.Plot(Mesh, EqnSet, role="ElemState", **kwargs)
+        
+        :Parameters:
+            UG: :class:`pyxflow.DataSet.xf_VectorGroup`
+                Vector group containing vector to plot
+            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+                Mesh for geometry data required for plotting
+            EqnSet: :class:`pyxflow.EqnSet.xf_EqnSet`
+                Equation set data
+            role: str
+                Identifier for the vector to use for plot
+                
+        :Returns:
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+            
+        :Kwargs:
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+            scalar: str
+                Name of scalar to plot
+            order: int
+                Interpolation order for mesh faces
+                
+            See also kwargs for :func:`pyxflow.Plot.GetXLims`
+        
+        :See also:
+            :func:`pyxflow.DataSet.xf_Vector.Plot()`
+        """
+        # Versions:
+        #  2014-02-09 @dalle   : First version
+        
+        # Get the vector.
+        U = self.GetVector(role)
+        # Plot based on the plot.
+        plot = U.Plot(Mesh, EqnSet, **kwargs)
+        # Return the plot handle.
+        return plot
+
 
 # ---- Class for xf_Vector ----
-
-
 class xf_Vector:
 
     """A Python class for XFlow xf_Vector objects"""
@@ -204,20 +249,22 @@ class xf_Vector:
         self.GenArray = [xf_GenArray(G) for G in GA]
     
     # Plotting method
-    def Plot(self, Mesh, EqnSet, plot=None, **kwargs):
+    def Plot(self, Mesh, EqnSet, scalar=None, plot=None, **kwargs):
         """
-        Plot a scalar
+        Plot a scalar.
         
         :Call:
-            >>> plot = V.Plot(Mesh, EqnSet, plot=None, **kwargs)
+            >>> plot = U.Plot(Mesh, EqnSet, scalar=None, plot=None, **kwargs)
             
         :Parameters:
-            V: :class:`pyxflow.DataSet.xf_Vector`
+            U: :class:`pyxflow.DataSet.xf_Vector`
                 Vector containing scalar data to plot
             Mesh: :class:`pyxflow.Mesh.xf_Mesh`
                 Mesh for geometry data required for plotting
             EqnSet: :class:`pyxflow.EqnSet.xf_EqnSet`
                 Equation set data
+            scalar: str
+                Name of scalar to plot
             plot: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
                 
@@ -228,10 +275,12 @@ class xf_Vector:
         :Kwargs:
             order: int
                 Interpolation order for mesh faces
-            line_options: dict
-                Options for matplotlib.pyplot.LineCollection
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
+        
+        :Notes:
+            When `scalar` is `None`, the first scalar available in the vector
+            will be used.  This is often `'Density'`.
         """
         # Mesh dimension
         dim = Mesh.Dim
@@ -272,7 +321,7 @@ class xf_Vector:
         # Plot order; apparently None leads to default below?
         Order = kwargs.get('order')
         # Scalar name; break on default
-        Name = kwargs.get('scalar')
+        Name = scalar
         # Process the colormap option...
         colormap = kwargs.get('colormap', plt.cm.jet)
         # Get the mesh nodes and subnodes and their scalar values.

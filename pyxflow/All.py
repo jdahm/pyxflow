@@ -65,47 +65,72 @@ class xf_All:
         ptr = px.GetPrimalState(self._ptr, TimeIndex)
         return xf_VectorGroup(ptr)
 
-    def Plot(self, **kwargs):
+    def Plot(self, scalar=None, **kwargs):
         """
-        All = xf_All(...)
-        h_t = All.Plot(xyrange=None, vgroup='State', scalar=None, mesh=False)
+        Plot the mesh and scalar from available data.
+        
+        :Call:
+            >>> plot = All.Plot(scalar=None, **kwargs)
 
-        INPUTS:
-           xyrange : list of coordinates to plot (Note 1)
-           vgroup  : title of vector group to use
-           scalar  : name of scalar to plot (Note 2)
-           mesh    : flag to draw a mesh
+        :Parameters:
+            All: :class:`pyxflow.All.xf_All`
+                XFlow all object Python representation
+            scalar: str
+                Name of scalar to plot
+                A value of `None` uses the default scalar.
+                A value of `False` prevents plotting of any scalar.
 
-        OUTPUTS:
-           h_t     : <matplotlib.pyplot.tripcolor> instance
-
-
-        This is the plotting method for the xf_All class.  More capabilities
-        will be added.
-
-        NOTES:
-           (1) The 'xyrange' keyword is specified in the form
-
-                   [xmin, xmax, ymin, ymax]
-
-               However, inputs such as `xyrange=(0,0,None,None)` are also
-               acceptable.  In this case, the minimum value for both
-               coordinates will be zero, but no maximum value will be
-               specified.  Furthermore, alternate keys 'xmin', 'xmax', etc.
-               override the values specified in 'range'.
-
-           (2) The 'scalar' keyword may be any state that's in the cell
-               interior list of states.  If the equation set is Navier-Stokes,
-               the options Mach number, entropy, and pressure are also
-               available.
+        :Returns:
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                pyXFlow plot instance with mesh and scalar handles
+        
+        :Kwargs:
+            mesh: bool
+                Whether or not to plot the mesh
+            plot: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle)
+            role: str
+                Identifier for the vector to use for plot
+                The default value is `'ElemState'`.
+            order: int
+                Interpolation order for mesh faces
+            vgroup: :class:`pyxflow.DataSet.xf_VectorGroup`
+                Vector group to use for plot
+                A value of `None` results in using the primal state.
+                The behavior of this keyword argument is subject to change.
+                
+            See also kwargs for :func:`pyxflow.Plot.GetXLims`
+        
+        :See also:
+            :func:`pyxflow.DataSet.xf_Vector.Plot()`
+            :func:`pyxflow.Mesh.xf_Mesh.Plot()`
         """
         # Versions:
         #  2013-09-29 @dalle   : First version
-
-        # Create a plot object.
-        h_p = xf_Plot(All=self, **kwargs)
-
-        # Output the handles.
-        return h_p
+        #  2014-02-09 @dalle   : Using xf_Vector.Plot() and xf_Mesh.Plot()
+        
+        # Extract the plot handle.
+        plot = kwargs.get("plot")
+        # Process the plot handle.
+        if plot is None:
+            # Initialize a plot.
+            kwargs["plot"] = xf_Plot()
+        elif not isinstance(plot, xf_Plot):
+            raise IOError("Plot handle must be instance of " +
+                "pyxflow.plot.xf_Plot")
+        # Determine the vector group to use.
+        UG = kwargs.get("vgroup")
+        if UG is None:
+            # Use the default vector group (PrimalState).
+            UG = self.GetPrimalState()
+        # Plot the mesh.
+        if kwargs.get("mesh", True) is True:
+            kwargs["plot"] = self.Mesh.Plot(**kwargs)
+        # Plot the scalar.
+        if scalar is not False and UG is not None:
+            kwargs["scalar"] = scalar
+            kwargs["plot"] = UG.Plot(self.Mesh, self.EqnSet, **kwargs)
+        # Return the plot handle.
+        return kwargs["plot"]
 
 
