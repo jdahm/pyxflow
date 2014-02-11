@@ -7,13 +7,6 @@
 #  2013-12-15 @dalle   : First version of xf_Plot class
 
 # ------- Modules required -------
-# Matplotlit essentials
-import matplotlib.pyplot as plt
-# Numeric functions
-import numpy as np
-# Line collection
-from matplotlib.collections import LineCollection
-
 
 # The background pyxflow workhorse module
 from . import _pyxflow as px
@@ -32,14 +25,39 @@ class xf_Param:
 
 
 class xf_EqnSet:
-
+    """
+    Interface to XFlow *xf_EqnSet*
+    
+    :Call:
+        >>> E = xf_EqnSet(ptr)
+        
+    :Parameters:
+        *ptr*: :class:`int`
+            Address of the *xf_EqnSet* struct
+    
+    :Returns:
+        *E*: :class:`pyxflow.All.EqnSet`
+            Instance of equation set interface
+            
+    :Data members:
+        *._ptr*: :class:`int`
+        
+    """
+    
+    # Initialization method
     def __init__(self, ptr):
+        """
+        Equation set initialization method
+        """
         self._ptr = ptr
 
 
 class xf_All:
     """
-    Interface to XFlow xf_All
+    Interface to XFlow *xf_All*
+    
+    This is usually the first function used to begin with pyXFlow analysis of a
+    solution.
     
     :Call:
         >>> All = xf_All(fname, DefaultFlag=True)
@@ -53,6 +71,28 @@ class xf_All:
     :Returns:
         *All*: :class:`pyxflow.All.xf_All`
             An instance of the pyXFlow *xf_All* interface
+    
+    :Data members:
+        *._ptr*: :class:`int`
+        
+        *.Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
+        
+        *.Geom*: :class:`pyxflow.Geom.xf_Geom`
+        
+        *.EqnSet*: :class:`pyxflow.All.xf_EqnSet`
+        
+        *.DataSet*: :class:`pyxflow.DataSet.xf_DataSet`
+        
+    :Examples:
+        Creating an *xf_All* instance is usually straightforward.  Assuming
+        that ``"naca_Adapt.xfa"`` is a file that exists on the Python path, the 
+        following example loads a solution and accesses the mesh instance.
+        
+            >>> All = xf_All("naca_Adapt.xfa")
+            ...
+            >>> All.Mesh
+            <pyxflow.Mesh.xf_Mesh instance at ...>
+    
     """
     
     # Initialization method
@@ -80,6 +120,25 @@ class xf_All:
         Deletion method for :class:`pyxflow.All.xf_All`
         """
         px.DestroyAll(self._ptr)
+        
+    # Method to write the xf_All back to file (after changes?)
+    def Write(self, fname):
+        """
+        Write *xf_All* back to file.
+        
+        :Call:
+            >>> All.Write(fname)
+        
+        :Parameters:
+            *All*: :class:`pyxflow.All.xf_All`
+                Instance of pyXFlow *xf_All* representation
+            *fname*: :class:`str`
+                Name of file to create
+        
+        :Returns:
+            ``None``
+        """
+            
 
     # Method to find the primal state automatically
     def GetPrimalState(self, TimeIndex=0):
@@ -141,11 +200,24 @@ class xf_All:
                 
                 The behavior of this keyword argument is subject to change.
                 
-            See also kwargs for :func:`pyxflow.Plot.GetXLims`
-        
+            See also kwargs for 
+                * :func:`pyxflow.Plot.GetXLims()`
+                * :func:`pyxflow.Mesh.xf_Mesh.Plot()`
+                * :func:`pyxflow.DataSet.xf_Vector.Plot()`
+            
+        :Examples:
+            The following example loads an airfoil solution and plots the
+            pressure near the surface.
+            
+                >>> All = xf_All("naca_Adapt.xfa")
+                ...
+                >>> All.Plot("Pressure", xlim=[-0.9,1.2,-0.5,0.6])
+                <pyxflow.Mesh.xf_Mesh instance at ...>
+            
         :See also:
-            * :func:`pyxflow.DataSet.xf_Vector.Plot()`
             * :func:`pyxflow.Mesh.xf_Mesh.Plot()`
+            * :func:`pyxflow.DataSet.xf_Vector.Plot()`
+            * :func:`pyxflow.DataSet.xf_VectorGroup.Plot()`
         """
         # Versions:
         #  2013-09-29 @dalle   : First version

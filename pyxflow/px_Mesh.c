@@ -98,7 +98,7 @@ px_GetNodes(PyObject *self, PyObject *args)
 
     // Make the mesh.
     np_Coord = PyArray_SimpleNewFromData( \
-                                          2, dims, NPY_DOUBLE, *Mesh->Coord);
+        2, dims, NPY_DOUBLE, *Mesh->Coord);
 
     // Output (Dim, nNode, Coord).
     return Py_BuildValue("iiO", Mesh->Dim, Mesh->nNode, np_Coord);

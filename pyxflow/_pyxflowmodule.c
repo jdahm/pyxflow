@@ -12,6 +12,7 @@
 
 #include "px_NumPy.h"
 
+
 static PyMethodDef Methods[] = {
 	// xf_Mesh methods
 	{"CreateMesh", px_CreateMesh, METH_VARARGS,
@@ -68,17 +69,17 @@ static PyMethodDef Methods[] = {
 		"Get information from an xf_GenArray pointer"},
 	// xf_All methods
 	{"CreateAll", px_CreateAll, METH_VARARGS,
-		"Create empty xf_All"},
+		doc_CreateAll},
 	{"DestroyAll", px_DestroyAll, METH_VARARGS,
-		"Destroy all and free memory"},
+		doc_DestroyAll},
 	{"ReadAllInputFile", px_ReadAllInputFile, METH_VARARGS,
-		"Reads from input file"},
+		doc_ReadAllInputFile},
 	{"ReadAllBinary", px_ReadAllBinary, METH_VARARGS,
-		"Read xf_All from input file"},
+		doc_ReadAllBinary},
 	{"WriteAllBinary", px_WriteAllBinary, METH_VARARGS,
-		"Writes all to binary file"},
+		doc_WriteAllBinary},
 	{"GetAllMembers", px_GetAllMembers, METH_VARARGS,
-		"Returns a tuple of pointers to the members of the xf_All"},
+		doc_GetAllMembers},
 	// Plotting methods
 	{"MeshPlotData", px_MeshPlotData, METH_VARARGS,
 		"Creates data for plotting a mesh"},

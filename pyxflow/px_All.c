@@ -108,7 +108,7 @@ px_ReadAllBinary(PyObject *self, PyObject *args)
     // No idea
     ierr = xf_Error(xf_EqnSetRegister(All->EqnSet));
     if (ierr != xf_OK) return NULL;
-
+    
     // Return the pointer.
     return Py_BuildValue("n", All);
 }
