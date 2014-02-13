@@ -1,4 +1,12 @@
-"""File to interface with XFlow mesh objects in various forms"""
+"""
+The *Mesh* module contains the primary interface for XFlow's *xf_Mesh* structs,
+which, not surprisingly, describe the meshes used for XFlow solutions.
+
+Included in this module are several methods to access internal *xf_Mesh*
+functions.  In other words, it provides an API for XFlow mesh methods.  In
+addition, this module enables interactive or scripted mesh deformation by
+shifting the node locations and rewriting the mesh to file.
+"""
 
 # Versions:
 #  2013-09-22 @dalle   : First version
@@ -22,8 +30,62 @@ from pyxflow.Plot import xf_Plot, GetXLims
 
 
 class xf_Mesh:
-
-    """A Python class for XFlow mesh objects"""
+    """
+    A Python class for XFlow mesh objects.
+    
+    If an instance is created with a pointer and no file name, the mesh is
+    processed from the existing *xf_Mesh* struct (through the XFlow API).
+    
+    If both the file name and the pointer are ``None``, an empty *xf_Mesh* is
+    created.
+    
+    :Call:
+        >>> Mesh = xf_Mesh(fname=None, ptr=None)
+    
+    :Parameters:
+        *fname*: :class:`str`
+            Name of mesh file to read (usually ends in *.gri*)
+        *ptr*: :class:`int`
+            Pointer to existing *xf_Mesh* struct
+    
+    :Returns:
+        *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
+            Instance of the *xf_Mesh* interface
+    
+    :Data members:
+        *_ptr*: :class:`int`
+            Pointer to *xf_Mesh* struct being interfaced
+        *Dim*: :class:`int`, ``1``, ``2``, or ``3``
+            Dimension of the current mesh
+        *nNode*: :class:`int`
+            Number of nodes in the mesh
+        *Coord*: :class:`numpy.array`, (*nNode*, *Dim*)
+            Array of coordinates for each node
+        *nBFaceGroup*: :class:`int`
+            Number of boundary face groups
+        *BFaceGroup*: :class:`pyxflow.Mesh.BFaceGroup` list
+            List of boundary face group objects
+        *nElemGroup*: :class:`int`
+            Number of element groups in the mesh
+        *ElemGroup*: :class:`pyxflow.Mesh.ElemGroup` list
+            List of element groups in the mesh
+    
+    :Examples:
+        To read a mesh file without also reading a solution, this class
+        can be used with a *.gri* file.
+        
+            >>> Mesh = xf_Mesh("naca_quad.gri")
+        
+        The other way that meshes are instantiated usually involves reading
+        the mesh component of an *.xfa* file.
+        
+            >>> All = xf_All("naca_adapt.xfa")
+            >>> Mesh = xf_Mesh(All._Mesh)
+            
+        In fact, this is exactly how ``All.Mesh`` is created, and ``Mesh``
+        in this case will be identical to ``All.Mesh``.  Furthermore,
+        changes to one will affect the other.
+    """
 
     # Parameters
     _ptr = None
@@ -40,21 +102,7 @@ class xf_Mesh:
     # Method to initialize the object
     def __init__(self, fname=None, ptr=None):
         """
-        Mesh = xf_Mesh(fname=None, ptr=None)
-
-        INPUTS:
-           fname : file name for a '.gri' file to read the mesh from
-           ptr   : integer pointer to existing C xf_Mesh struct
-
-        OUTPUTS:
-           Mesh  : an instance of the xf_Mesh Python class
-
-        This function initializes a Mesh object in one of three ways.  If
-        the `gri` key is not `None`, the function will attempt to read a
-        mesh from a text file.  If the `ptr` is not `None`, the function
-        assumes the mesh already exists on the heap and will read from it.
-        If both keys are `None`, an empty mesh will be created.  Finally,
-        if both keys are not `None`, an exception is raised.
+        Mesh initialization method
         """
         # Versions:
         #  2013-09-23 @dalle   : First version
@@ -114,27 +162,27 @@ class xf_Mesh:
     def Plot(self, plot=None, **kwargs):
         """Create a plot for an :class:`xf_Mesh` object.
         
-        Elements that do not have at least one node with a coordinate between
-        `xmin[i]` and `xmax[i]`, for `i` corresponding to each dimension in the
-        mesh, are not plotted.
+        Elements that do not have at least one node within the plot window
+        are not plotted.  See :func:`pyxflow.Plot.GetXLims` for a thorough
+        description of how the plot window can be created.
         
         :Call:
             >>> plot = Mesh.Plot(plot=None, **kwargs)
         
         :Parameters:
-            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+            *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
                 Mesh to be plotted
-            plot: :class:`pyxflow.Plot.xf_Plot`
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
                 Overall mesh handle to plot
                 
         :Returns:
-            plot : :class:`pyxflow.Plot.xf_Plot`
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             
         :Kwargs:
-            order: int
+            *order*: :class:`int`
                 Interpolation order for mesh faces
-            line_options: dict
+            *line_options*: :class:`dict`
                 Options for :class:`matplotlib.pyplot.LineCollection`
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
@@ -180,7 +228,6 @@ class xf_Mesh:
         Order = kwargs.get('order')
 
         # Get the plot data for each element.
-        # Don't worry, eventually someone will explain what the hell c is.
         # It's a list of the node indices in each mesh element.
         x, y, c = px.MeshPlotData(self._ptr, xLimMin, xLimMax, Order)
         # Turn this into a list of coordinates.

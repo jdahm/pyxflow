@@ -1,6 +1,6 @@
-***************************
-Interface to XFlow *xf_All*
-***************************
+***********************************************
+Interface to XFlow *xf_All*, :mod:`pyxflow.All`
+***********************************************
 
 The :mod:`pyxflow.All` submodule contains the top-level interface for XFlow
 solutions.  This primarily involves loading an instance of
@@ -10,8 +10,11 @@ Once an *xf_All* variable has been created, it is possible to reference more
 specific data, such as the mesh description and scalar solution values, using
 members of :class:`pyxflow.All.xf_All` that are instances of other classes.
 
-:mod:`pyxflow.All`
-===================
+.. automodule:: pyxflow.All
+    
+
+Interface for *xf_All* structs
+==============================
 
 .. autoclass:: pyxflow.All.xf_All
     :members: Plot, Write, GetPrimalState

@@ -1,4 +1,8 @@
-"""File with Top-level interfaces to XFlow"""
+"""
+The *All* module contains top-level methods for interfacing with pyXFlow's
+representation of XFlow *xf_All* structs.  Its primary contents are the
+:class:`pyxflow.All.xf_All` class and its members.
+"""
 
 # Versions:
 #  2013-09-18 @jdahm   : First version
@@ -73,15 +77,15 @@ class xf_All:
             An instance of the pyXFlow *xf_All* interface
     
     :Data members:
-        *._ptr*: :class:`int`
+        *_ptr*: :class:`int`
         
-        *.Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
+        *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
         
-        *.Geom*: :class:`pyxflow.Geom.xf_Geom`
+        *Geom*: :class:`pyxflow.Geom.xf_Geom`
         
-        *.EqnSet*: :class:`pyxflow.All.xf_EqnSet`
+        *EqnSet*: :class:`pyxflow.All.xf_EqnSet`
         
-        *.DataSet*: :class:`pyxflow.DataSet.xf_DataSet`
+        *DataSet*: :class:`pyxflow.DataSet.xf_DataSet`
         
     :Examples:
         Creating an *xf_All* instance is usually straightforward.  Assuming

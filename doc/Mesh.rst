@@ -1,15 +1,15 @@
-****************************
-Interface to XFlow `xf_Mesh`
-****************************
-
-:class:`pyxflow.Mesh.xf_Mesh`
-=============================
-
-.. autoclass:: pyxflow.Mesh.xf_Mesh
-    :members: __init__
-
-:mod:`pyxflow.Mesh`
-===================
+*************************************************
+Interface to XFlow *xf_Mesh*, :mod:`pyxflow.Mesh`
+*************************************************
 
 .. automodule:: pyxflow.Mesh
-    :members: xf_Mesh
+
+Interface for *xf_Mesh* structs
+===============================
+
+.. autoclass:: pyxflow.Mesh.xf_Mesh
+    :members: Plot
+
+API Functions for *xf_Mesh*
+===========================
+
