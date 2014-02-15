@@ -40,7 +40,7 @@ class xf_Mesh:
     created.
     
     :Call:
-        >>> Mesh = xf_Mesh(fname=None, ptr=None)
+        >>> Mesh = pyxflow.xf_Mesh(fname=None, ptr=None)
     
     :Parameters:
         *fname*: :class:`str`
@@ -48,26 +48,22 @@ class xf_Mesh:
         *ptr*: :class:`int`
             Pointer to existing *xf_Mesh* struct
     
-    :Returns:
-        *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
-            Instance of the *xf_Mesh* interface
-    
     :Data members:
-        *_ptr*: :class:`int`
+        *Mesh._ptr*: :class:`int`
             Pointer to *xf_Mesh* struct being interfaced
-        *Dim*: :class:`int`, ``1``, ``2``, or ``3``
+        *Mesh.Dim*: :class:`int`, ``1``, ``2``, or ``3``
             Dimension of the current mesh
-        *nNode*: :class:`int`
+        *Mesh.nNode*: :class:`int`
             Number of nodes in the mesh
-        *Coord*: :class:`numpy.array`, (*nNode*, *Dim*)
+        *Mesh.Coord*: :class:`numpy.array`, (*nNode*, *Dim*)
             Array of coordinates for each node
-        *nBFaceGroup*: :class:`int`
+        *Mesh.nBFaceGroup*: :class:`int`
             Number of boundary face groups
-        *BFaceGroup*: :class:`pyxflow.Mesh.BFaceGroup` list
+        *Mesh.BFaceGroup*: :class:`pyxflow.Mesh.xf_BFaceGroup` list
             List of boundary face group objects
-        *nElemGroup*: :class:`int`
+        *Mesh.nElemGroup*: :class:`int`
             Number of element groups in the mesh
-        *ElemGroup*: :class:`pyxflow.Mesh.ElemGroup` list
+        *Mesh.ElemGroup*: :class:`pyxflow.Mesh.xf_ElemGroup` list
             List of element groups in the mesh
     
     :Examples:
@@ -187,7 +183,18 @@ class xf_Mesh:
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
         
-        
+        :Examples:
+            The following loads an airfoil mesh and plots the portion of it
+            near the surface of the airfoil.
+            
+                >> Mesh = pyxflow.xf_Mesh("naca_quad.gri")
+                >> hp = Mesh.Plot(xmin=-0.5, xmax=1.5, ylim=[-0.5,0.5])
+                
+            The mesh can be plotted from an instance of
+            :class:`pyxflow.All.xf_All` as well.
+            
+                >> All = pyxflow.xf_All(fname="naca_adapt.xfa")
+                >> hp = All.Mesh.Plot(xlim=[-0.5,1.5,-0.5,0.5])
         """
         
         # Process the plot handle.
@@ -261,14 +268,37 @@ class xf_Mesh:
 
 
 class xf_BFaceGroup:
-
     """
-    Boundary face group object for pyxflow, a Python interface for XFlow
-
+    Boundary face group object for :mod:`pyxflow`
+    
+    This function is normally called with only the *ptr*  and *i* parameters.
+    The *Title*, *nBFace*, etc. usually come from the XFlow mesh information.
+    
+    :Call:
+        >>> BG = pyxflow.Mesh.xf_BFaceGroup(Title=None, nBFace=None, ptr=None, i=None)
+        
+    :Parameters:
+        *Title*: :class:`str`
+            Name of the boundary group
+        *nBFace*: :class:`int`
+            Number of boundary faces in the group
+        *ptr*: :class:`int`
+            Pointer to the *xf_Mesh* containing the boundary face group
+        *i*: :class:`int`
+            Index of the boundary group to read from
+    
+    :Data members:
+        *BG._ptr*: :class:`int`
+            Pointer to *All->Mesh->BFaceGroup[i]*
+        *BG.Title*: :class:`str`
+            Name of the group, often *All->Mesh->BFaceGroup[i]->Title*
+        *BG.nBFace*: :class:`int`
+            Number of boundary faces in the group
     """
     # Versions:
-    #   2013-09-24 @dalle   : _pyxflow version
-    #   2013-09-29 @dalle   : changed ptr to Mesh instead of BFaceGroup
+    #  2013-09-24 @dalle   : _pyxflow version
+    #  2013-09-29 @dalle   : changed ptr to Mesh instead of BFaceGroup
+    #  2014-02-14 @dalle   : documented
 
     # Initialization method
     def __init__(self, Title=None, nBFace=None, ptr=None, i=None):
@@ -290,8 +320,30 @@ class xf_BFaceGroup:
 class xf_ElemGroup:
 
     """
-    Element group object for pyxflow, a Python interface for XFlow
-
+    Element group object for :mod:`pyxflow`
+    
+    :Call:
+        >>> EG = pyxflow.Mesh.xf_Elemgroup(ptr=None, i=None)
+        
+    :Parameters:
+        *ptr*: :class:`int`
+            Pointer to the *xf_Mesh* containing the element group
+        *i*: :class:`int`
+            Index of the element group to read from
+    
+    :Data members:
+        *EG._ptr*: :class:`int`
+            Pointer to *All->Mesh->ElemGroup[i]*
+        *EG.nElem*: :class:`int`
+            Number of elements in the element group
+        *EG.nNode*: :class:`int`
+            Number of nodes used in the element group
+        *EG.QOrder*: :class:`int`
+            Interpolation order for mesh elements
+        *EG.QBasis*: :class:`str`
+            Name of basis used for elements of this group
+        *EG.Node*: :class:`numpy.array`, (*nNode*, *n*)
+            Indices of nodes in each element; *n* is number of nodes per element
     """
     # Versions:
     #   2013-09-24 @dalle   : _pyxflow version
@@ -307,7 +359,7 @@ class xf_ElemGroup:
         self.Node = None
         # Check for a pointer.
         if ptr is not None:
-            # index
+            # Default index
             if i is None:
                 i = 0
             # Fields
@@ -317,10 +369,8 @@ class xf_ElemGroup:
 
 # --- Class for boundary faces ---
 class xf_BFace:
-
     """
-    Boundary face class for pyxflow, a Python interface for XFlow
-
+    Boundary face class for :mod:`pyxflow`
     """
     # Initialization method
 
@@ -331,3 +381,4 @@ class xf_BFace:
         self.Face = Face
         self.Orient = Orient
     # No methods for now
+    

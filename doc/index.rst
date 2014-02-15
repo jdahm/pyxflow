@@ -22,6 +22,7 @@ Contents
 
     All
     Mesh
+    Geom
     Plot
 
 Installation

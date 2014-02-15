@@ -1,4 +1,16 @@
-"""File to interface with XFlow xf_Geom objects in various forms"""
+"""
+The *Geom* module contains the primary interface for XFlow's *xf_Geom* structs,
+which describe the boundaries and surfaces in XFlow.  The "geom" of a boundary
+is not the same as the boundary condition because, among other reasons, surfaces
+should be defined more accurately than the boundary elements.  Otherwise, if a
+boundary element is refined, the new surface node may not lie on the intended
+surface.
+
+Included in this module are several methods to access internal *xf_Geom*
+functions.  In other words, it provides an API for XFlow geom methods.  In
+addition, this module enables interactive or scripted surface deformation by
+shifting the node locations and rewriting the geometry to file.
+"""
 
 # Versions:
 #  2013-09-25 @dalle   : First version
@@ -12,28 +24,38 @@ import pyxflow._pyxflow as px
 
 # ------- Class for xf_Geom objects -------
 class xf_Geom:
-
-    """A Python class for XFlow xf_Geom objects"""
+    """
+    A Python class for XFlow *xf_Geom* objects
+    
+    If an instance is created with a pointer and no file name, the geom is
+    processed from the existing *xf_Geom* struct (through the XFlow API).
+    
+    If both the file name and the pointer are ``None``, an empty *xf_Geom* is
+    created.
+    
+    :Call:
+        >>> Geom = pyxflow.xf_Geom(fname=None, ptr=None)
+    
+    :Parameters:
+        *fname*: :class:`str`
+            Name of *.geom* file to read the geometry from
+        *ptr*: :class:`int`
+            Pointer to existing *xf_Geom* struct
+    
+    :Data members:
+        *Geom._ptr*: :class:`int`
+            Pointer to *xf_Geom* instance
+        *Geom.nComp*: :class:`int`
+            Number of geometry components in the geometry description
+        *Geom.Comp*: :class:`pyxflow.Geom.xf_GeomComp` list
+            List of *xf_GeomComp* interfaces
+    """
 
     # Initialization method:
     #  can be read from '.geom' file or existing binary object
     def __init__(self, fname=None, ptr=None):
         """
-        Geom = xf_Geom(fname=None, ptr=None)
-
-        INPUTS:
-           fname : file name for a '.geom' file to read the geom from
-           ptr   : integer pointer to existing C xf_Geom struct
-
-        OUTPUTS:
-           Geom  : an instance of the xf_Geom Python class
-
-        This function initializes a Mesh object in one of three ways.  If
-        the `fname` key is not `None`, the function will attempt to read a
-        geom from a text file.  If the `ptr` is not `None`, the function
-        assumes the mesh already exists on the heap and will read from it.
-        If both keys are `None`, an empty mesh will be created.  Finally,
-        if both keys are not `None`, an exception is raised.
+        Initialization method for *xf_Geom*
         """
         # Versions:
         #  2013-09-25 @dalle   : First version
@@ -68,10 +90,7 @@ class xf_Geom:
     # Destructor method for xf_Mesh
     def __del__(self):
         """
-        xf_Geom destructor
-
-        This function reminds the pyxflow module to clean up the C
-        xf_Geom object when the python object is deleted.
+        Destructor for *xf_Geom*
         """
         # Version:
         #  2013-09-24 @dalle   : First version
@@ -82,17 +101,19 @@ class xf_Geom:
     # Write method
     def Write(self, fname):
         """
-        Geom.Write(fname)
-
-        INPUTS:
-           Geom  : instance of the xf_Geom class
-           fname : name of geom file to write
-
-        OUTPUTS:
-           None
-
-        This method writes an xf_Geom instance to file.
-
+        Write an *xf_Geom* struct to file.
+        
+        :Call:
+            >>> Geom.Write(fname)
+        
+        :Parameters:
+            *Geom*: :class:`pyxflow.Geom.xf_Geom`
+                Object containing geometry information to save
+            *fname*: :class:`str`
+                Name of file to write
+        
+        :Returns:
+            ``None``
         """
         # Versions:
         #  2013-09-30 @dalle   : First version
@@ -105,20 +126,33 @@ class xf_Geom:
 
 # ---- Class for Geom Components ----
 class xf_GeomComp:
-
-    """A Python class for XFlow xf_GeomComp objects"""
+    """
+    A Python class for XFlow *xf_GeomComp* objects
+    
+    :Call:
+        >>> GC = pyxflow.Geom.xf_GeomComp(ptr, i=None)
+    
+    :Parameters:
+        *ptr*: :class:`int`
+            Pointer to *xf_Geom*
+        *i*: :class:`int`
+            Index of geometry component to read
+    
+    :Data members:
+        *GC.Name*: :class:`str`
+            User-set name of the geometry component
+        *GC.Type*: :class:`str`
+            Type of geometry component, often ``'Spline'``
+        *GC.BFGTitle*: :class:`str`
+            Name of boundary face group to which component applies
+        *GC.Data*: :class:`pyxflow.Geom.xf_GeomCompSpline` or ``None``
+            Spline data if appropriate
+    """
 
     # Initialization method
-    def __init__(self, Geom, i=None):
+    def __init__(self, ptr, i=None):
         """
-        GC = xf_GeomComp(Geom, i=None)
-
-        INPUTS:
-           Geom : pointer from xf_Geom object
-           i    : index of component to extract
-
-        OUTPUTS:
-           GC   : an instance of the xf_GeomComp class
+        Initialization method for *xf_GeomComp*
         """
         # Versions:
         #  2013-09-25 @dalle   : First version
@@ -129,13 +163,13 @@ class xf_GeomComp:
         self.BFGTitle = None
         self.Data = None
         # Check for bad inputs.
-        if Geom is None:
+        if ptr is None:
             return None
 
         # Read from data if appropriate
         if i is not None:
             # Fields
-            self.Name, self.Type, self.BFGTitle, D = px.GeomComp(Geom, i)
+            self.Name, self.Type, self.BFGTitle, D = px.GeomComp(ptr, i)
 
         # Set data if possible.
         if self.Type == "Spline" and D is not None:
@@ -146,22 +180,30 @@ class xf_GeomComp:
 
 # ---- Class for xf_GeomCompSline (geometry splines) ----
 class xf_GeomCompSpline:
-
-    """ A Python class for XFlow xf_GeomCompSpline objects"""
+    """
+    A Python class for XFlow *xf_GeomCompSpline* objects
+    
+    This class has data members identical to the parameters to its
+    initialization method.
+    
+    :Call:
+        >>> GCS = xf_GeomCompSpline(Order, N, X, Y)
+    
+    :Parameters:
+        *Order*: :class:`int`
+            Spline interpolation order
+        *N*: :class:`int`
+            Number of points in spline
+        *X*: :class:`numpy.array` (*N*)
+            *x*-coordinates of spline points
+        *Y*: :class:`numpy.array` (*N*)
+            *y*-coordinates of spline points
+    """
 
     # Initialization method
     def __init__(self, Order=None, N=None, X=None, Y=None):
         """
-        GCS = xf_GeomCompSpline(Order, N, X, Y)
-
-        INPUTS:
-           Order : spline interpolation order
-           N     : number of points in spline
-           X     : x-coordinates of spline points
-           Y     : y-coordinates of spline points
-
-        OUTPUTS:
-           GCS   : an instance of the xf_GeomCompSpline class
+        Initialization method for *xf_GeomCompSpline*
         """
         # Versions:
         #  2013-09-25 @dalle   : First version
@@ -171,3 +213,4 @@ class xf_GeomCompSpline:
         self.N = N
         self.X = X
         self.Y = Y
+

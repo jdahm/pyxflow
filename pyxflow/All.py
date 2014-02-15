@@ -33,19 +33,15 @@ class xf_EqnSet:
     Interface to XFlow *xf_EqnSet*
     
     :Call:
-        >>> E = xf_EqnSet(ptr)
+        >>> E = pyxflow.All.xf_EqnSet(ptr)
         
     :Parameters:
         *ptr*: :class:`int`
             Address of the *xf_EqnSet* struct
-    
-    :Returns:
-        *E*: :class:`pyxflow.All.EqnSet`
-            Instance of equation set interface
             
     :Data members:
-        *._ptr*: :class:`int`
-        
+        *E._ptr*: :class:`int`
+            Pointer to XFlow *xf_EqnSet*
     """
     
     # Initialization method
@@ -64,7 +60,7 @@ class xf_All:
     solution.
     
     :Call:
-        >>> All = xf_All(fname, DefaultFlag=True)
+        >>> All = pyxflow.xf_All(fname, DefaultFlag=True)
     
     :Parameters:
         *fname*: :class:`str`
@@ -72,20 +68,16 @@ class xf_All:
         *DefaultFlag*: :class:`bool`
             Whether or not to use defaults internally
     
-    :Returns:
-        *All*: :class:`pyxflow.All.xf_All`
-            An instance of the pyXFlow *xf_All* interface
-    
     :Data members:
-        *_ptr*: :class:`int`
+        *All._ptr*: :class:`int`
         
-        *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
+        *All.Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
         
-        *Geom*: :class:`pyxflow.Geom.xf_Geom`
+        *All.Geom*: :class:`pyxflow.Geom.xf_Geom`
         
-        *EqnSet*: :class:`pyxflow.All.xf_EqnSet`
+        *All.EqnSet*: :class:`pyxflow.All.xf_EqnSet`
         
-        *DataSet*: :class:`pyxflow.DataSet.xf_DataSet`
+        *All.DataSet*: :class:`pyxflow.DataSet.xf_DataSet`
         
     :Examples:
         Creating an *xf_All* instance is usually straightforward.  Assuming

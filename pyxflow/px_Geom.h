@@ -3,122 +3,120 @@
 
 PyObject *
 px_CreateGeom(PyObject *self, PyObject *args);
-/*
-    PURPOSE:
-    Creates an empty xf_Geom object and returns pointer
-
-    CALL:
-    G = px.CreateGeom()
-
-    INPUTS:
-    None
-
-    OUTPUTS:
-    G : pointer to xf_Geom
-*/
+char doc_CreateGeom[] =
+"Create an empty *xf_Geom* instance.\n"
+"\n"
+":Call:\n"
+"   >>> G = px.CreateGeom()\n"
+"\n"
+":Parameters:\n"
+"   ``None``\n"
+"\n"
+":Returns:\n"
+"   *G*: :class:`int`\n"
+"       Pointer to empty *xf_Geom* instance\n";
 
 
 PyObject *
 px_ReadGeomFile(PyObject *self, PyObject *args);
-/*
-    PURPOSE:
-    Read a '.geom' file and create an xf_Geom structure
-
-    CALL:
-    G = px.ReadGeomFile(fname)
-
-    INPUTS:
-    fname : name of "geom" file
-
-    OUTPUTS:
-    G : pointer to xf_Geom
-*/
+char doc_ReadGeomFile[] =
+"Create an *xf_Geom* instance from a *.geom* file.\n"
+"\n"
+":Call:\n"
+"   >>> G = px.ReadGeomFile(fname)\n"
+"\n"
+":Parameters:\n"
+"   *fname*: :class:`str`\n"
+"       Name of geometry file to read\n"
+"\n"
+":Returns:\n"
+"   *G*: :class:`int`\n"
+"       Pointer to *xf_Geom* instance\n";
 
 
 PyObject *
 px_WriteGeomFile(PyObject *self, PyObject *args);
-/*
-    PURPOSE:
-    Write a '.geom' file from an xf_Geom structure
-
-    CALL:
-    px.WriteGeomFile(G, fname)
-
-    INPUTS:
-    G     : pointer to xf_Geom
-    fname : name of "geom" file
-
-    OUTPUTS:
-    None
-*/
+char doc_WriteGeomFile[] =
+"Write an existing *xf_Geom* to ASCII file.\n"
+"\n"
+":Call:\n"
+"   >>> px.WriteGeomFile(G, fname)\n"
+"\n"
+":Parameters:\n"
+"   *G*: :class:`int`\n"
+"       Pointer to *xf_Geom* instance\n"
+"   *fname*: :class:`str`\n"
+"       Name of mesh file to read\n"
+"\n"
+":Returns:\n"
+"   ``None``\n"
+":Examples:\n"
+"   This API function can be used to write a geometry file.\n"
+"\n"
+"       >>> Geom = pyxflow.xf_Mesh('naca.geom')\n"
+"       >>> px.WriteGeomFile(Geom._ptr, 'naca_copy.geom')\n"
+"\n"
+"   In addition, it can be used to write the geometry from a solution.\n"
+"\n"
+"       >>> All = pyxflow.xf_All('naca_adapt_0.xfa')\n"
+"       >>> px.WriteGeomFile(All.Geom._ptr, 'naca_copy.geom')\n";
 
 
 PyObject *
 px_nGeomComp(PyObject *self, PyObject *args);
-/*
-    PURPOSE:
-    Get Geom->nComp and pointer to Geom->Comp
-
-    CALL:
-    nComp, C = px.nGeomComp(G)
-
-    INPUTS:
-    G : pointer to xf_Geom struct
-
-    OUTPUTS:
-    nComp : number of geometry components
-    C     : pointer to Geom->Comp
-*/
+char doc_nGeomComp[] =
+"Get the number of boundary geometry components from an *xf_Geom* instance.\n"
+"\n"
+":Call:\n"
+"   >>> nComp = px.nGeomComp(G)\n"
+"\n"
+":Parameters:\n"
+"   *G*: :class:`int`\n"
+"       Pointer to *xf_Geom* instance\n"
+"\n"
+":Returns:\n"
+"   *nComp*: :class:`int`\n"
+"       Number of geometry components\n";
 
 
 PyObject *
 px_GeomComp(PyObject *self, PyObject *args);
-/*
-    PURPOSE:
-	Get data from xf_GeomComp structure
-
-    CALL:
-	Name, Type, BFGTitle, D = px.GeomComp(G, iComp)
-
-    INPUTS:
-	G     : pointer to xf_Geom struct
-	iComp : index of component to analyze
-
-    OUTPUTS:
-	Name     : name of component
-	Type     : type of component, see xfe_GeomCompName
-	BFGTitle : title of corresponding boundary condition
-	D        : data from the component (Note 1)
-
-    NOTES:
-    (1) If `Type` is "Spline", a dict with the following values will be returned.
-
-        D
-         ["Order"] : interpolation order of the spline
-         ["N"]     : number of points in the spline
-         ["X"]     : x-coordinates of points
-         ["Y"]     : y-coordinates of points
-
-      If the value of `Type` is not spline, the value of `D` will be `None`.
-*/
-
-
+char doc_GeomComp[] =
+"Get basic information from an *xf_GeomComp* geometry component.\n"
+"\n"
+":Call:\n"
+"   >>> (Name, Type, BFGTitle, D) = px.GeomComp(G, i)\n"
+"\n"
+":Parameters:\n"
+"   *G*: :class:`int`\n"
+"       Pointer to *xf_Geom* instance\n"
+"   *i*: :class:`int`\n"
+"       Index of geometry component to read\n"
+"\n"
+":Returns:\n"
+"   *Name*: :class:`str`\n"
+"       Name of geometry component\n"
+"   *Type*: :class:`str`\n"
+"       Geometry component type\n"
+"   *BFGTitle*: :class:`str`\n"
+"       Name of boundary group to which geometry is applied\n"
+"   *D*: :class:`dict` or ``None``\n"
+"       Spline data if appropriate\n";
 
 
 PyObject *
 px_DestroyGeom(PyObject *self, PyObject *args);
-/*
-    PURPOSE:
-    Calls xf_DestroyGeom on the pointer to xf_Geom struct
-
-    CALL:
-    px.DestroyGeom(G)
-
-    INPUTS:
-    G : xf_Geom pointer
-
-    OUTPUTS:
-    None
-*/
+char doc_DestroyGeom[] =
+"Destroy an *xf_Geom* instance and free memory.\n"
+"\n"
+":Call:\n"
+"   >>> px.DestroyGeom(G)\n"
+"\n"
+":Parameters:\n"
+"   *G*: :class:`int`\n"
+"       Pointer to *xf_Geom* instance\n"
+"\n"
+":Returns:\n"
+"   ``None``\n";
 
 #endif
