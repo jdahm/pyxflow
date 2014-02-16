@@ -23,6 +23,7 @@ Contents
     All
     Mesh
     Geom
+    DataSet
     Plot
 
 Installation

@@ -1,4 +1,22 @@
-"""File to interface with XFlow xf_DataSet objects in various forms"""
+"""
+File to interface with XFlow *xf_DataSet* objects in various forms
+
+The *DataSet* module contains the primary interface for XFlow's *xf_DataSet*
+structs, which contain information on XFlow solutions.  This includes the state,
+which is the traditional type of CFD solution; the adjoint; and many other
+things.
+
+Two very important aspects of data sets are vector groups (*xf_VectorGroup*) and
+vectors (*xf_Vector*).  Roughly, vectors contain the values of entities that
+have values for each element in the solution (either interior elements or face
+elements), and vector groups are, well, groups of vectors.  Although it is
+possible to perform some tasks in pyXFlow without any understanding of data sets
+and vectors (for example using the :func:`pyxflow.All.Plot` method and its
+defaults), they are critical to a deeper investigation of XFlow solutions.
+
+Included in this module are several methods to access internal *xf_DataSet*
+functions.  In other words, it provides an API for XFlow data sets.
+"""
 
 # Versions:
 #  2013-09-25 @dalle   : First version
@@ -19,34 +37,46 @@ import pyxflow.Plot
 
 
 class xf_DataSet:
-
-    """A Python class for XFlow xf_DataSet objects"""
+    """
+    A Python class for XFlow *xf_DataSet* objects
+    
+    The option to read from the pointer to an existing *xf_DataSet* is
+    prioritized.  Alternatively, if both *fname* and *Mesh* are valid inputs,
+    the data set is constructed by reading from a `.data.` file.
+    
+    :Call:
+        >>> DS = xf_DataSet(ptr=None, fname=None, Mesh=None)
+    
+    :Parameters:
+        *ptr*: :class:`int`
+            Pointer to *xf_DataSet* from which to read
+        *fname*: :class:`str`
+            Name of `.data` file to read from
+        *Mesh*: :class:`int` or :class:`pyxflow.Mesh.xf_Mesh`
+            Pointer to *xf_Mesh* (``Mesh._ptr`` is used if it exists)
+    
+    :Data members:
+        *DS._ptr*: :class:`int`
+            Pointer to the XFlow *xf_DataSet*
+        *DS.nData*: :class:`int`
+            Number of XFlow *xf_Data* objects contained in the data set
+        *DS.Data*: :class:`pyxflow.DataSet.xf_Data` list
+            List of *xf_Data* interfaces
+    """
 
     # Initialization methd
     def __init__(self, ptr=None, fname=None, Mesh=None):
         """
-        DataSet = xf_DataSet(ptr=None, fname=None, Mesh=None)
-
-        INPUTS:
-           ptr     : integer pointer to existing C xf_DataSet struct
-           fname   : file name for a '.data' file to read the xf_DataSet from
-           Mesh    : pointer to xf_Mesh, required if reading from file
-
-        OUTPUTS:
-           DataSet : an instance of the xf_DataSet Python class
-
-        This function initializes a DataSet object in one of three ways.  The
-        main method is to use a pointer that was previously created.  If the
-        `ptr` key is not `None`, the function assumes the DataSet already exists
-        on the heap and will read from it.  If `ptr` is `None` and both `fname`
-        and `Mesh` are not `None`, the function will attempt to read the DataSet
-        from file.  Finally, in all other cases, an empty DataSet is allocated.
+        Initialization method for *xf_DataSet*
         """
         # Versions:
         #  2013-09-25 @dalle   : First version
 
         # Set the defaults.
         self.nData = 0
+        # Check if the Mesh was passed... rather than its pointer.
+        if hasattr(Mesh, '_ptr'):
+            Mesh = Mesh._ptr
 
         # Check the parameters.
         if ptr is not None:
@@ -76,7 +106,7 @@ class xf_DataSet:
     # xf_DataSet destructor method
     def __del__(self):
         """
-        xf_DataSet destructor
+        *xf_DataSet* destructor
 
         This function reminds the pyxflow module to clean up the C
         xf_DataSet object when the Python object is deleted.
@@ -90,24 +120,44 @@ class xf_DataSet:
 
 # ---- Class for xf_Data struts ----
 class xf_Data:
-
-    """A Python class for XFlow xf_Data objects"""
+    """
+    A Python class for XFlow *xf_Data* objects
+    
+    :Call:
+        >>> D = xf_Data(DataSet, i)
+    
+    :Parameters:
+        *DataSet*: :class:`int`
+            Pointer to *xf_DataSet* struct
+        *i*: :class:`int`
+            Quasi-index of *xf_Data* struct to read; since *DataSet->Data* is
+            actually a linked list, these are read starting with
+            *DataSet->Data->Head*
+    
+    :Data members:
+        *D._ptr*: :class:`int`
+            Pointer to *xf_Data* struct
+        *D.Title*: :class:`int`
+            Name of the data object
+        *D.Type*: :class:`str`
+            Type of data contained, usually ``'VectorGroup'``
+        *D.Data*: :class:`pyxflow.DataSet.xf_Vector` or :class:`pyxflow.DataSet.xf_VectorGroup`
+            Instance of an object containing data
+    
+    :Examples:
+        Data members are usually extracted from solutions (e.g., `.xfa` files),
+        although reading from `.data` files is also possible.
+        
+            >>> All = xf_All('naca_adapt_0.xfa')
+            >>> D = All.DataSet.Data[0]
+            >>> D.Title
+            'Drag_Adjoint`
+    """
 
     # Initialization method
     def __init__(self, DataSet, i=None):
         """
-        Data = xf_Data(DataSet, i=None)
-
-        INPUTS:
-           DataSet : pointer to xf_DataSet struct
-           i       : index of xf_Data to use
-
-        OUTPUTS:
-           Data    : an instance of the xf_Data class
-               .Title : title of the xf_Data object
-               .Type  : xf_Data type, see xfe_DataName
-               .Data  : instance of xf_[Vector,VectorGroup] class
-               ._Data : pointer to corresponding DataSet->Data
+        Initialization method for *xf_Data* interface
         """
         # Versions:
         #  2013-09-26 @dalle   : First version
@@ -134,21 +184,29 @@ class xf_Data:
 
 # ---- Class for xf_VectorGroup ----
 class xf_VectorGroup:
-
-    """A Python class for XFlow xf_VectorGroup objects"""
+    """
+    A Python class for XFlow *xf_VectorGroup* objects.
+    
+    :Call:
+        >>> UG = xf_VectorGroup(ptr)
+    
+    :Parameters:
+        *ptr*: :class:`int`
+            Pointer to *xf_VectorGroup* struct
+    
+    :Data members:
+        *UG._ptr*: :class:`int`
+            Pointer to *xf_VectorGroup* struct
+        *UG.nVector*: :class:`int`
+            Number of vectors in the group
+        *UG.Vector*: :class:`pyxflow.DataSet.xf_Vector` list
+            List of *xf_Vector* instances
+    """
 
     # Initialization method
     def __init__(self, ptr):
         """
-        VG = xf_VectorGroup(ptr)
-
-        INPTUS:
-           ptr : pointer to xf_VectorGroup (DataSet->D->Data)
-
-        OUTPUTS:
-           VG  : instance of xf_VectorGroup object
-
-        This function creates a VectorGroup object from a pointer.
+        Initialization method for *xf_VectorGroup*
         """
         # Versions:
         #  2013-09-26 @dalle   : First version
@@ -166,6 +224,20 @@ class xf_VectorGroup:
 
     # Method to get a plot based on the name of the role.
     def GetVector(self, role="ElemState"):
+        """
+        Find a vector from a vector group from its role.
+        
+        :Call:
+            U = UG.GetVector(role="ElemState")
+        
+        :Parameters:
+            *role*: :class:`str`
+                Title of the vector to find in the vector group
+        
+        :Returns:
+            *U*: :class:`pyxflow.DataSet.xf_Vector`
+                Appropriate vector based on the role
+        """
         _ptr = px.GetVectorFromGroup(self._ptr, role)
         return xf_Vector(_ptr)
         
@@ -178,31 +250,74 @@ class xf_VectorGroup:
             >>> plot = UG.Plot(Mesh, EqnSet, role="ElemState", **kwargs)
         
         :Parameters:
-            UG: :class:`pyxflow.DataSet.xf_VectorGroup`
+            *UG*: :class:`pyxflow.DataSet.xf_VectorGroup`
                 Vector group containing vector to plot
-            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+            *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
                 Mesh for geometry data required for plotting
-            EqnSet: :class:`pyxflow.EqnSet.xf_EqnSet`
+            *EqnSet*: :class:`pyxflow.All.xf_EqnSet`
                 Equation set data
-            role: str
+            *role*: :class:`str`
                 Identifier for the vector to use for plot
                 
         :Returns:
-            plot: :class:`pyxflow.Plot.xf_Plot`
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             
         :Kwargs:
-            plot: :class:`pyxflow.Plot.xf_Plot`
-                Instance of plot class (plot handle)
-            scalar: str
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle) to use instead of creating
+                a new one
+            *scalar*: :class:`str`
                 Name of scalar to plot
-            order: int
+            *order*: :class:`int`
                 Interpolation order for mesh faces
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
+            
+        :Examples:
+            This can be a relatively tricky function to use, only because it
+            requires the user to find a lot of the information manually.  The
+            following example loads a solution file and plots the first vector
+            group in the data set.
+            
+                >>> All = xf_All("naca_adapt_0.xfa")
+                >>> UG = All.DataSet.Data[0].Data
+                >>> plot = UG.Plot(All.Mesh, All.EqnSet, xlim=[-0.5,1.5,-0.6,0.6])
+            
+            The result of this example is not necessarily what one might expect
+            because the first vector group in ``All`` happens to be the drag
+            adjoint.  Thus the above example plots the density component of the
+            drag adjoint.
+            
+            Since the order in which vector groups are stored is not
+            predictable, a more refined method is required to get the desired
+            vector group.  The following will automatically find the vector
+            group associated with the solution's state and plot it.
+            
+                >>> All = xf_All("naca_adapt_0.xfa")
+                >>> UG = All.GetPrimalState()
+                >>> plot = UG.Plot(All.Mesh, All.EqnSet, xlim=[-0.5,1.5,-0.6,0.6])
+                
+            The *scalar* keyword argument is also particularly useful.  Any
+            scalar that exists in XFlow for the active equation set can be
+            plotted in this way.  For example, the following plots the pressure
+            for the adapted example.  The mesh is also plotted.
+            
+                >>> M = All.Mesh
+                >>> ES = All.EqnSet
+                >>> xlim=[-0.5,1.5,-0.6,0.6] 
+                >>> plot = UG.Plot(M, ES, scalar="Pressure", xlim=xlim)
+                >>> plot = M.Plot(plot=plot)
+                
+            One convenient factor that is only subtly demonstrated in this last
+            example is that by passing the plot handle to
+            :func:`pyxflow.Mesh.xf_Mesh.Plot()` in the last line, there is no
+            need to redefine the plot window (using *xlim* in these examples).
         
         :See also:
-            :func:`pyxflow.DataSet.xf_Vector.Plot()`
+            :func:`pyxflow.DataSet.xf_Vector.Plot()`,
+            :func:`pyxflow.Mesh.xf_Mesh.Plot()`,
+            :func:`pyxflow.All.xf_All.Plot()`
         """
         # Versions:
         #  2014-02-09 @dalle   : First version
@@ -217,21 +332,44 @@ class xf_VectorGroup:
 
 # ---- Class for xf_Vector ----
 class xf_Vector:
-
-    """A Python class for XFlow xf_Vector objects"""
+    """
+    A Python class for XFlow *xf_Vector* objects
+    
+    :Call:
+        >>> U = xf_Vector(ptr)
+    
+    :Parameters:
+        *ptr*: :class:`int`
+            Pointer to *xf_Vector* struct
+    
+    :Data members:
+        *U._ptr*: :class:`int`
+            Pointer to *xf_Vector* struct
+        *U.nArray*: :class:`int`
+            Number of arrays in the vector
+        *U.Order*: :class:`int` list
+            List of interpolation order(s) used for this vector
+        *U.Basis*: :class:`str` list
+            List of element bases used for this vector
+        *U.StateName*: :class:`str` list
+            List of states in this vector
+        *U.GenArray*: :class:`pyxflow.DataSet.xf_GenArray` list
+            List of *U.nArray* arrays
+    
+    :Examples:
+        If the equation set is `CompressibleNS`, the primal state's element
+        state vector will have the following states.
+        
+            >>> All = xf_All("naca_adapt_0.xfa")
+            >>> U = All.GetPrimalState().GetVector()
+            >>> U.StateName
+            ['Density', 'XMomentum', 'YMomentum', 'Energy']
+    """
 
     # Initialization method
     def __init__(self, ptr):
         """
-        V = xf_Vector(ptr)
-
-        INPUTS:
-           ptr : ponter to xf_Vector
-
-        OUTPUTS:
-           V   : instance of xf_Vector class
-
-        This function creates an xf_Vector object from pointer.
+        Initialization method for *xf_Vector* interface
         """
         # Versions:
         #  2013-09-26 @dalle   : First version
@@ -253,34 +391,39 @@ class xf_Vector:
         """
         Plot a scalar.
         
+        When *scalar* is ``None``, the first scalar available in the vector
+        will be used.  This is often ``'Density'``.
+        
         :Call:
             >>> plot = U.Plot(Mesh, EqnSet, scalar=None, plot=None, **kwargs)
             
         :Parameters:
-            U: :class:`pyxflow.DataSet.xf_Vector`
+            *U*: :class:`pyxflow.DataSet.xf_Vector`
                 Vector containing scalar data to plot
-            Mesh: :class:`pyxflow.Mesh.xf_Mesh`
+            *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
                 Mesh for geometry data required for plotting
-            EqnSet: :class:`pyxflow.EqnSet.xf_EqnSet`
+            *EqnSet*: :class:`pyxflow.EqnSet.xf_EqnSet`
                 Equation set data
-            scalar: str
+            *scalar*: :class:`str`
                 Name of scalar to plot
-            plot: :class:`pyxflow.Plot.xf_Plot`
-                Instance of plot class (plot handle)
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
+                Instance of plot class (plot handle) to use instead of creating
+                a new one
                 
         :Returns:
-            plot: :class:`pyxflow.Plot.xf_Plot`
+            *plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             
         :Kwargs:
-            order: int
+            *order*: :class:`int`
                 Interpolation order for mesh faces
                 
             See also kwargs for :func:`pyxflow.Plot.GetXLims`
         
-        :Notes:
-            When `scalar` is `None`, the first scalar available in the vector
-            will be used.  This is often `'Density'`.
+        :See also:
+            :func:`pyxflow.All.xf_All.Plot()`,
+            :func:`pyxflow.DataSet.xf_VectorGroup.Plot()`,
+            :func:`pyxflow.Mesh.xf_Mesh.Plot()`
         """
         # Mesh dimension
         dim = Mesh.Dim
@@ -351,22 +494,38 @@ class xf_Vector:
 
 # ---- Class for xf_GenArray ----
 class xf_GenArray:
-
-    """A Python class for XFlow xf_GenArray objects"""
+    """
+    A Python class for XFlow *xf_GenArray* objects
+    
+    This is the lowest-level class for solution, adjoint, adaptive indicator,
+    etc. data.
+    
+    :Call:
+        >>> GA = xf_GenArray(ptr)
+    
+    :Parameters:
+        *ptr*: :class:`int`
+            Pointer to *xf_GenArray* struct
+    
+    :Data members:
+        *GA._ptr*: :class:`int`
+            Pointer to *xf_GenArray* object
+        *GA.n*: :class:`int`
+            Number of elements represented in the array
+        *GA.r*: :class:`int` or ``None``
+            Number of state values per element, if constant
+        *GA.vr*: :class:`numpy.array` or ``None``
+            Number of state values for each element, if not constant
+        *GA.rValue*: :class:`numpy.array` or ``None``
+            Array of element state values if real-valued
+        *GA.iValue*: :class:`numpy.array` or ``None``
+            Array of element state values if integer-valued
+    """
 
     # Initialization method
     def __init__(self, ptr):
         """
-        GA = xf_GenArray(ptr)
-
-        INPUTS:
-           ptr : pointer to xf_GenArray
-
-        OUTPUTS:
-           GA  : instance of xf_GenArray class
-
-        This function creates an xf_GenArray instance, which holds the actual
-        data of most xf_Vector structs.
+        Initialization method for *xf_GenArray*
         """
         # Versions:
         #  2013-09-26 @dalle   : First version
