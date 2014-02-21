@@ -35,4 +35,6 @@ make other uses of these low-level functions.  For the source code to these
 Python/C interface functions, see `px_DataSet.c`.
 
 .. automodule:: pyxflow._pyxflow
-    :members: CreateDataSet, DestroyDataSet, ReadDataSetFile
+    :members: CreateDataSet, DestroyDataSet, ReadDataSetFile, nDataSetData,
+        GetData, GetVectorGroup, GetVector, GetVectorFromGroup, GetPrimalState,
+        GetGenArray

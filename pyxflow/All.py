@@ -163,26 +163,23 @@ class xf_All:
         Plot the mesh and scalar from *xf_All* representation
         
         :Call:
-            >>> plot = All.Plot(scalar=None, **kwargs)
+            >>> Plot = All.Plot(scalar=None, **kwargs)
 
         :Parameters:
             *All*: :class:`pyxflow.All.xf_All`
                 Instance of the pyXFlow *xf_All* interface
             *scalar*: :class:`str`
-                Name of scalar to plot
-                
-                A value of ``None`` uses the default scalar.
-                
-                A value of ``False`` prevents plotting of any scalar.
+                Name of scalar to Plot.  A value of ``None`` uses the default
+                scalar.  A value of ``False`` prevents plotting of any scalar.
 
         :Returns:
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 pyXFlow plot instance with mesh and scalar handles
         
         :Kwargs:
             *mesh*: :class:`bool`
                 Whether or not to plot the mesh
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             *role*: :class:`str`
                 Identifier for the vector to use for plot
@@ -220,14 +217,14 @@ class xf_All:
         #  2014-02-09 @dalle   : Using xf_Vector.Plot() and xf_Mesh.Plot()
         
         # Extract the plot handle.
-        plot = kwargs.get("plot")
+        Plot = kwargs.get("Plot")
         # Process the plot handle.
-        if plot is None:
+        if Plot is None:
             # Initialize a plot.
-            kwargs["plot"] = xf_Plot()
-        elif not isinstance(plot, xf_Plot):
+            kwargs["Plot"] = xf_Plot()
+        elif not isinstance(Plot, xf_Plot):
             raise IOError("Plot handle must be instance of " +
-                "pyxflow.plot.xf_Plot")
+                "pyxflow.Plot.xf_Plot")
         # Determine the vector group to use.
         UG = kwargs.get("vgroup")
         if UG is None:
@@ -235,12 +232,12 @@ class xf_All:
             UG = self.GetPrimalState()
         # Plot the mesh.
         if kwargs.get("mesh", True) is True:
-            kwargs["plot"] = self.Mesh.Plot(**kwargs)
+            kwargs["Plot"] = self.Mesh.Plot(**kwargs)
         # Plot the scalar.
         if scalar is not False and UG is not None:
             kwargs["scalar"] = scalar
-            kwargs["plot"] = UG.Plot(self.Mesh, self.EqnSet, **kwargs)
+            kwargs["Plot"] = UG.Plot(self.Mesh, self.EqnSet, **kwargs)
         # Return the plot handle.
-        return kwargs["plot"]
+        return kwargs["Plot"]
 
 

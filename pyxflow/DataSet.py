@@ -247,7 +247,7 @@ class xf_VectorGroup:
         Plot a scalar from a vector group.
         
         :Call:
-            >>> plot = UG.Plot(Mesh, EqnSet, role="ElemState", **kwargs)
+            >>> Plot = UG.Plot(Mesh, EqnSet, role="ElemState", **kwargs)
         
         :Parameters:
             *UG*: :class:`pyxflow.DataSet.xf_VectorGroup`
@@ -260,11 +260,11 @@ class xf_VectorGroup:
                 Identifier for the vector to use for plot
                 
         :Returns:
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             
         :Kwargs:
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle) to use instead of creating
                 a new one
             *scalar*: :class:`str`
@@ -282,7 +282,7 @@ class xf_VectorGroup:
             
                 >>> All = xf_All("naca_adapt_0.xfa")
                 >>> UG = All.DataSet.Data[0].Data
-                >>> plot = UG.Plot(All.Mesh, All.EqnSet, xlim=[-0.5,1.5,-0.6,0.6])
+                >>> Plot = UG.Plot(All.Mesh, All.EqnSet, xlim=[-0.5,1.5,-0.6,0.6])
             
             The result of this example is not necessarily what one might expect
             because the first vector group in ``All`` happens to be the drag
@@ -296,7 +296,7 @@ class xf_VectorGroup:
             
                 >>> All = xf_All("naca_adapt_0.xfa")
                 >>> UG = All.GetPrimalState()
-                >>> plot = UG.Plot(All.Mesh, All.EqnSet, xlim=[-0.5,1.5,-0.6,0.6])
+                >>> Plot = UG.Plot(All.Mesh, All.EqnSet, xlim=[-0.5,1.5,-0.6,0.6])
                 
             The *scalar* keyword argument is also particularly useful.  Any
             scalar that exists in XFlow for the active equation set can be
@@ -306,8 +306,8 @@ class xf_VectorGroup:
                 >>> M = All.Mesh
                 >>> ES = All.EqnSet
                 >>> xlim=[-0.5,1.5,-0.6,0.6] 
-                >>> plot = UG.Plot(M, ES, scalar="Pressure", xlim=xlim)
-                >>> plot = M.Plot(plot=plot)
+                >>> Plot = UG.Plot(M, ES, scalar="Pressure", xlim=xlim)
+                >>> Plot = M.Plot(Plot=Plot)
                 
             One convenient factor that is only subtly demonstrated in this last
             example is that by passing the plot handle to
@@ -325,9 +325,9 @@ class xf_VectorGroup:
         # Get the vector.
         U = self.GetVector(role)
         # Plot based on the plot.
-        plot = U.Plot(Mesh, EqnSet, **kwargs)
+        Plot = U.Plot(Mesh, EqnSet, **kwargs)
         # Return the plot handle.
-        return plot
+        return Plot
 
 
 # ---- Class for xf_Vector ----
@@ -387,7 +387,7 @@ class xf_Vector:
         self.GenArray = [xf_GenArray(G) for G in GA]
     
     # Plotting method
-    def Plot(self, Mesh, EqnSet, scalar=None, plot=None, **kwargs):
+    def Plot(self, Mesh, EqnSet, scalar=None, Plot=None, **kwargs):
         """
         Plot a scalar.
         
@@ -395,7 +395,7 @@ class xf_Vector:
         will be used.  This is often ``'Density'``.
         
         :Call:
-            >>> plot = U.Plot(Mesh, EqnSet, scalar=None, plot=None, **kwargs)
+            >>> Plot = U.Plot(Mesh, EqnSet, scalar=None, Plot=None, **kwargs)
             
         :Parameters:
             *U*: :class:`pyxflow.DataSet.xf_Vector`
@@ -406,12 +406,12 @@ class xf_Vector:
                 Equation set data
             *scalar*: :class:`str`
                 Name of scalar to plot
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle) to use instead of creating
                 a new one
                 
         :Returns:
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             
         :Kwargs:
@@ -428,39 +428,39 @@ class xf_Vector:
         # Mesh dimension
         dim = Mesh.Dim
         # Process the plot.
-        if plot is None:
+        if Plot is None:
             # Initialize a plot.
-            plot = pyxflow.Plot.xf_Plot()
-        elif not isinstance(plot, pyxflow.Plot.xf_Plot):
+            Plot = pyxflow.Plot.xf_Plot()
+        elif not isinstance(Plot, pyxflow.Plot.xf_Plot):
             raise IOError("Plot handle must be instance of " +
-                "pyxflow.plot.xf_Plot")
+                "pyxflow.Plot.xf_Plot")
         # Use specified defaults for plot window if they exist.
-        kwargs.setdefault('xmindef', plot.xmin)
-        kwargs.setdefault('xmaxdef', plot.xmax)
+        kwargs.setdefault('xmindef', Plot.xmin)
+        kwargs.setdefault('xmaxdef', Plot.xmax)
         # Get the limits based on the Mesh and keyword args
         xmin, xmax = pyxflow.Plot.GetXLims(Mesh, **kwargs)
         # Save the plot limits.
-        plot.xmin = xmin
-        plot.xmax = xmax
+        Plot.xmin = xmin
+        Plot.xmax = xmax
             
         # Check for an existing mesh plot.
-        if plot.scalar is not None:
+        if Plot.scalar is not None:
             # Delete it!
-            plot.scalar.remove()
+            Plot.scalar.remove()
         # Determine what figure to use.
         if kwargs.get('figure') is not None:
             # Use the input figure.
-            plot.figure = kwargs['figure']
-        elif plot.figure is None:
+            Plot.figure = kwargs['figure']
+        elif Plot.figure is None:
             # Follow norms of plotting programs; default is gcf().
-            plot.figure = plt.gcf()
+            Plot.figure = plt.gcf()
         # Determine what axes to use.
         if kwargs.get('axes') is not None:
             # Use the input value.
-            plot.axes = kwargs['axes']
+            Plot.axes = kwargs['axes']
         else:
             # Normal plotting conventions for default
-            plot.axes = plt.gca()
+            Plot.axes = plt.gca()
         # Plot order; apparently None leads to default below?
         Order = kwargs.get('order')
         # Scalar name; break on default
@@ -474,22 +474,22 @@ class xf_Vector:
         if dim > 1:
             # Create a set of triangles with gradient colors.
             T = Triangulation(x, y, triangles=tri)
-            p = plot.axes.tripcolor(T, scalar, shading='gouraud', cmap=colormap)
+            p = Plot.axes.tripcolor(T, scalar, shading='gouraud', cmap=colormap)
             # Store the tripcolor handle.
-            plot.scalar = p
+            Plot.scalar = p
         else:
             # Plot the value versus x.
-            plot.scalar = plot.axes.plot(x, scalar)
+            Plot.scalar = Plot.axes.plot(x, scalar)
         # Apply the bounding box that was created earlier.
         if kwargs.get('reset_limits', True):
-            plot.axes.set_xlim(xmin[0], xmax[0])
+            Plot.axes.set_xlim(xmin[0], xmax[0])
             if dim > 1:
-                plot.axes.set_ylim(xmin[1], xmax[1])
+                Plot.axes.set_ylim(xmin[1], xmax[1])
         # Draw if necessary.
         if plt.isinteractive():
             plt.draw()
         # Return the plot.
-        return plot
+        return Plot
 
 
 # ---- Class for xf_GenArray ----

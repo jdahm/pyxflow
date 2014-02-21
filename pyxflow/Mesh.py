@@ -155,7 +155,7 @@ class xf_Mesh:
             px.DestroyMesh(self._ptr)
 
     # Plot method for mesh
-    def Plot(self, plot=None, **kwargs):
+    def Plot(self, Plot=None, **kwargs):
         """Create a plot for an :class:`xf_Mesh` object.
         
         Elements that do not have at least one node within the plot window
@@ -163,16 +163,16 @@ class xf_Mesh:
         description of how the plot window can be created.
         
         :Call:
-            >>> plot = Mesh.Plot(plot=None, **kwargs)
+            >>> Plot = Mesh.Plot(Plot=None, **kwargs)
         
         :Parameters:
             *Mesh*: :class:`pyxflow.Mesh.xf_Mesh`
                 Mesh to be plotted
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Overall mesh handle to plot
                 
         :Returns:
-            *plot*: :class:`pyxflow.Plot.xf_Plot`
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
                 Instance of plot class (plot handle)
             
         :Kwargs:
@@ -188,49 +188,49 @@ class xf_Mesh:
             near the surface of the airfoil.
             
                 >> Mesh = pyxflow.xf_Mesh("naca_quad.gri")
-                >> hp = Mesh.Plot(xmin=-0.5, xmax=1.5, ylim=[-0.5,0.5])
+                >> Plot = Mesh.Plot(xmin=-0.5, xmax=1.5, ylim=[-0.5,0.5])
                 
             The mesh can be plotted from an instance of
             :class:`pyxflow.All.xf_All` as well.
             
                 >> All = pyxflow.xf_All(fname="naca_adapt.xfa")
-                >> hp = All.Mesh.Plot(xlim=[-0.5,1.5,-0.5,0.5])
+                >> Plot = All.Mesh.Plot(xlim=[-0.5,1.5,-0.5,0.5])
         """
         
         # Process the plot handle.
-        if plot is None:
+        if Plot is None:
             # Initialize a plot.
-            plot = xf_Plot()
-        elif not isinstance(plot, xf_Plot):
+            Plot = xf_Plot()
+        elif not isinstance(Plot, xf_Plot):
             raise IOError("Plot handle must be instance of " +
                 "pyxflow.plot.xf_Plot")
         # Use specified defaults for plot window if they exist.
-        kwargs.setdefault('xmindef', plot.xmin)
-        kwargs.setdefault('xmaxdef', plot.xmax)
+        kwargs.setdefault('xmindef', Plot.xmin)
+        kwargs.setdefault('xmaxdef', Plot.xmax)
         # Get the limits based on the Mesh and keyword args
         xLimMin, xLimMax = GetXLims(self, **kwargs)
         # Save the plot limits.
-        plot.xmin = xLimMin
-        plot.xmax = xLimMax
+        Plot.xmin = xLimMin
+        Plot.xmax = xLimMax
         
         # Check for an existing mesh plot.
-        if plot.mesh is not None:
+        if Plot.mesh is not None:
             # Delete it!
-            plot.mesh.remove()
+            Plot.mesh.remove()
         # Determine what figure to use.
         if kwargs.get('figure') is not None:
             # Use the input figure.
-            plot.figure = kwargs['figure']
-        elif plot.figure is None:
+            Plot.figure = kwargs['figure']
+        elif Plot.figure is None:
             # Follow norms of plotting programs; default is gcf().
-            plot.figure = plt.gcf()
+            Plot.figure = plt.gcf()
         # Determine what axes to use.
         if kwargs.get('axes') is not None:
             # Use the input value.
-            plot.axes = kwargs['axes']
+            Plot.axes = kwargs['axes']
         else:
             # Normal plotting conventions for default
-            plot.axes = plt.gca()
+            Plot.axes = plt.gca()
         # Plot order; apparently None leads to default below?
         Order = kwargs.get('order')
 
@@ -249,18 +249,18 @@ class xf_Mesh:
         # Create the lines efficiently.
         hl = LineCollection(s, **line_options)
         # Plot them.
-        plot.axes.add_collection(hl)
+        Plot.axes.add_collection(hl)
         # Apply the bounding box that was created earlier.
         if kwargs.get('reset_limits', True):
-            plot.axes.set_xlim(xLimMin[0], xLimMax[0])
-            plot.axes.set_ylim(xLimMin[1], xLimMax[1])
+            Plot.axes.set_xlim(xLimMin[0], xLimMax[0])
+            Plot.axes.set_ylim(xLimMin[1], xLimMax[1])
         # Store the handle to the line collection.
-        plot.mesh = hl
+        Plot.mesh = hl
         # Draw if necessary.
         if plt.isinteractive():
             plt.draw()
         # Return the plot handle.
-        return plot
+        return Plot
         
 
 
