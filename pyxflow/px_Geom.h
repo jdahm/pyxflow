@@ -105,6 +105,13 @@ char doc_GeomComp[] =
 
 
 PyObject *
+px_SetGeomCompPanelCoord(PyObject *self, PyObject *args);
+char doc_SetGeomCompPanelCoord[] =
+"Set node coordinates for an *xf_GeomCompPanel* geometry component.\n";
+
+
+
+PyObject *
 px_DestroyGeom(PyObject *self, PyObject *args);
 char doc_DestroyGeom[] =
 "Destroy an *xf_Geom* instance and free memory.\n"

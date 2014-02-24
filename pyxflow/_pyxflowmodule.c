@@ -46,6 +46,8 @@ static PyMethodDef Methods[] = {
 		doc_ReadGeomFile},
 	{"WriteGeomFile", px_WriteGeomFile, METH_VARARGS,
 		doc_WriteGeomFile},
+    {"SetGeomCompPanelCoord", px_SetGeomCompPanelCoord, METH_VARARGS,
+        doc_SetGeomCompPanelCoord},
 	// xf_DataSet methods
 	{"CreateDataSet", px_CreateDataSet, METH_VARARGS, 
 		doc_CreateDataSet},
@@ -82,9 +84,9 @@ static PyMethodDef Methods[] = {
 		doc_GetAllMembers},
 	// Plotting methods
 	{"MeshPlotData", px_MeshPlotData, METH_VARARGS,
-		"Creates data for plotting a mesh"},
+		doc_MeshPlotData},
 	{"ScalarPlotData", px_ScalarPlotData, METH_VARARGS,
-		"Creates data for plotting a scalar"},
+		doc_ScalarPlotData},
 	{NULL, NULL, 0, NULL}
 };
 

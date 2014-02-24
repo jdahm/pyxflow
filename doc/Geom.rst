@@ -14,6 +14,8 @@ Interface for *xf_Geom* structs
 
 .. autoclass:: pyxflow.Geom.xf_GeomCompSpline
 
+.. autoclass:: pyxflow.Geom.xf_GeomCompPanel
+
 API Functions for *xf_Geom*
 ===========================
 

@@ -158,6 +158,7 @@ class xf_GeomComp:
         #  2013-09-25 @dalle   : First version
 
         # Set the initial fields.
+        self.ptr = None
         self.Name = None
         self.Type = None
         self.BFGTitle = None
@@ -175,7 +176,12 @@ class xf_GeomComp:
         if self.Type == "Spline" and D is not None:
             # Initialize the component.
             self.Data = xf_GeomCompSpline(D["Order"],
-                                          D["N"], D["X"], D["Y"])
+                D["N"], D["X"], D["Y"])
+        elif self.Type == "Panel" and D is not None:
+            # Initialize the component.
+            self.Data = xf_GeomCompPanel(D["Order"],
+                D["dim"], D["Basis"], D["nNode"], D["nPanel"],
+                D["Coord"], D["Panels"])
 
 
 # ---- Class for xf_GeomCompSline (geometry splines) ----
@@ -213,4 +219,48 @@ class xf_GeomCompSpline:
         self.N = N
         self.X = X
         self.Y = Y
+
+
+# ---- Class for xf_GeomCompPanel (geometry panels) ----
+class xf_GeomCompPanel:
+    """
+    A Python class for XFlow *xf_GeomCompPanel* objects
+    
+    This class has data members identical to the parameter to its
+    initialization method.
+    
+    :Call:
+        >>> GCP = xf_GeomCompPanel(Order, Dim, Basis, nNode, nPanel, Coord, Panels)
+    
+    :Parameters:
+        *Order*: :class:`int`
+            Basis order for the panels
+        *Dim*: :class:`int`
+            Dimension of the geometry
+        *Basis*: :class:`str`
+            Name of the panel basis type
+        *nNode*: :class:`int`
+            Number of nodes in the component
+        *nPanel*: :class:`int`
+            Number of panels in the component
+        *Coord*: :class:`numpy.array` (*nNode*,*Dim*)
+            Matrix of coordinates of each node in the component
+        *Panels*: :class:`numpy.array` (*nPanel*,*nn*)
+            Indices of nodes in each panel
+    """
+    
+    # Initialization method
+    def __init__(self, Order=None, Dim=None, Basis=None, nNode=None, \
+            nPanel=None, Coord=None, Panels=None):
+        """
+        Initialization method for *xf_GeomCompPanel*
+        """
+        # Set the fields.
+        self.Order = Order
+        self.Dim = Dim
+        self.Basis = Basis
+        self.nNode = nNode
+        self.nPanel = nPanel
+        self.Coord = Coord
+        self.Panels = Panels
 
