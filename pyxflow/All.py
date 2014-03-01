@@ -156,6 +156,36 @@ class xf_All:
         """
         ptr = px.GetPrimalState(self._ptr, TimeIndex)
         return xf_VectorGroup(ptr)
+        
+        
+    # Method to find a vector group by name
+    def GetVectorGroup(self, vgroup='State'):
+        """
+        Find an *xf_VectorGroup* by name.
+        
+        For older *.xfa* files, this may return an *xf_Vector*
+        
+        :Call:
+            >>> UG = All.GetVectorGroup(vgroup)
+            
+        :Paramaters:
+            *vgroup*: :class:`str`
+                Name of vector group to find
+        
+        :Returns:
+            *UG*: :class:`pyxflow.DataSet.xf_VectorGroup`
+                Vector group with requested name
+        """
+        # Make a list of available titles
+        titles = [D.Title for D in self.DataSet.Data]
+        # Check if it's there
+        if not vgroup in titles:
+            raise RuntimeError("All has no vector group '%'." % vgroup)
+        # Get the index
+        i = titles.index(vgroup)
+        # Return the vector group
+        return self.DataSet.Data[i].Data
+        
 
     # Master plotting method
     def Plot(self, scalar=None, **kwargs):
@@ -226,10 +256,13 @@ class xf_All:
             raise IOError("Plot handle must be instance of " +
                 "pyxflow.Plot.xf_Plot")
         # Determine the vector group to use.
-        UG = kwargs.get("vgroup")
-        if UG is None:
+        vgroup = kwargs.get("vgroup")
+        if vgroup is None:
             # Use the default vector group (PrimalState).
             UG = self.GetPrimalState()
+        else:
+            # Find the vector group by name
+            UG = self.GetVectorGroup(vgroup)
         # Plot the mesh.
         if kwargs.get("mesh", True) is True:
             kwargs["Plot"] = self.Mesh.Plot(**kwargs)

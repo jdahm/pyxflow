@@ -10,7 +10,8 @@ pyXFlow Plot Handles: :class:`pyxflow.Plot.xf_Plot`
 ===================================================
 
 .. autoclass:: pyxflow.Plot.xf_Plot
-    :members: remove, AutoScale, FillWindow, set_colormap, HideBox, Show
+    :members: remove, ShowColorbar, AutoScale, FillWindow,
+        set_colormap, HideBox, Show
 
 The pyXFlow Plot Module: :mod:`pyxflow.Plot`
 ============================================

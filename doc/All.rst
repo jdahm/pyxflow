@@ -17,7 +17,7 @@ Interface for *xf_All* structs
 ==============================
 
 .. autoclass:: pyxflow.All.xf_All
-    :members: Plot, Write, GetPrimalState
+    :members: Plot, Write, GetPrimalState, GetVectorGroup
     
 .. autoclass:: pyxflow.All.xf_EqnSet
 

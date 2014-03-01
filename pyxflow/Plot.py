@@ -51,6 +51,10 @@ class xf_Plot:
             Handle to the mesh lines, if they are drawn
         *h.scalar*: :class:`matplotlib.collections.TriMesh`
             Handle to the background color plot, if it is drawn
+        *h.colorbar*: :class:`matplotlib.colorbar.Colorbar`
+            Handle to colorbar
+        *h.cax*: :class:`matplotlib.axes.AxesSubplot`
+            Handle to axes containing colorbar
         *h.xmin*: :class:`float` list
             List of minimum coordinate in the plot window for each dimension
         *h.xmax*: :class:`float` list
@@ -75,6 +79,8 @@ class xf_Plot:
         self.mesh = None
         self.scalar = None
         self.contour = None
+        self.colorbar = None
+        self.cax = None
         # Store the limits.
         self.xmin = None
         self.xmax = None
@@ -137,17 +143,67 @@ class xf_Plot:
         return None
         
 
+    
+    # Method to show a damn colorbar (why is this so difficult?)
+    def ShowColorbar(self, **kwargs):
+        """
+        Show a colorbar for an *xf_Plot* instance
+        
+        The plot's *scalar* property will be used for the colorbar by default.
+        This will not be the case if ``Plot.scalar`` is ``None``.
+        
+        :Call:
+            >>> Plot.ShowColorbar()
+        
+        :Parameters:
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
+                Handle to XFlow plot to be removed from the active window
+        
+        :Returns:
+            ``None``
+        
+        :Kwargs:
+            All keyword arguments are passed to :func:`colorbar()`
+        """
+        # Check for something to use.
+        if self.scalar is not None:
+            # Add a colorbar (worst syntax ever)
+            cb = self.figure.colorbar(self.scalar, **kwargs)
+        elif self.contour is not None:
+            # Add the colorbar using the contour plot
+            cb = self.figure.colorbar(self.contour, **kwargs)
+        # Save the colorbar handle (easy part).
+        self.colorbar = cb
+        # Find all the axes (because colorbar wonderfully doesn't give you the
+        # axes handle!
+        ax = self.figure.get_axes()
+        # There should be two axes.  This will completely break if subplots are
+        # going on, but there's no way to fix it due to the wonderful way in
+        # which matplotlib's colorbar is programmed.
+        if ax[0] == self.axes and len(ax) == 2:
+            self.cax = ax[1]
+        # Update the plot if appropriate.
+        if plt.isinteractive():
+            plt.draw()
+        # Not output
+        return None
+            
+        
     # Method to make plot fill the window
-    def FillWindow(self):
+    def FillWindow(self, xfrac=None):
         """
         Modify an *xf_Plot* instance to fill the entire window
         
+        Fills 90% of window if a colorbar is present
+        
         :Call:
-            >>> Plot.FillWindow()
+            >>> Plot.FillWindow(xfrac=1.0)
 
         :Parameters:
-           *Plot*: :class:`pyxflow.Plot.xf_Plot`
-              Plot handle
+            *Plot*: :class:`pyxflow.Plot.xf_Plot`
+                Plot handle
+            *xfrac*: :class:`float`
+                Fraction of horizontal portion of plot to fill
 
         :Returns:
             ``None``
@@ -157,8 +213,19 @@ class xf_Plot:
 
         # Get the axes handle.
         h_a = self.axes
+        # Default xfraction
+        if xfrac is None:
+            # Check for a colorbar
+            if self.colorbar is None:
+                # Fill entire window
+                xfrac = 1.0
+            else:
+                # Fill 90% of horizontal plot region.
+                xfrac = 0.9
+                # Move the colorbar.
+                self.cax.set_position([0.91,0.03,0.1,0.94])
         # Set the position in relative (scaled) units.
-        h_a.set_position([0, 0, 1, 1])
+        h_a.set_position([0, 0, xfrac, 1])
         # Update.
         if plt.isinteractive():
             plt.draw()

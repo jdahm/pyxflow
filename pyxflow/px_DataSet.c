@@ -18,9 +18,8 @@ px_CreateDataSet(PyObject *self, PyObject *args)
     xf_DataSet *DataSet = NULL;
     int ierr;
 
-    // Allocate the mesh.
+    // Allocate the data set.
     ierr = xf_Error(xf_CreateDataSet(&DataSet));
-
     if (ierr != xf_OK) return NULL;
 
     // Return the pointer.
@@ -236,15 +235,17 @@ px_GetVectorFromGroup(PyObject *self, PyObject *args)
 
     // Parse the Python input objects
     if (!PyArg_ParseTuple(args, "ns", &VG, &VRoleType)) return NULL;
-
-    ierr = xf_Error(xf_Value2Enum(VRoleType, xfe_VectorRoleName, xfe_VectorRoleLast, (int *)&VRole));
-
+    
+    // Process the input string to an enum.
+    ierr = xf_Error(xf_Value2Enum( \
+        VRoleType, xfe_VectorRoleName, xfe_VectorRoleLast, (int *)&VRole));
     if (ierr != xf_OK) return NULL;
-
+    
+    // Find the vector.
     ierr = xf_Error(xf_GetVectorFromGroup(VG, VRole, &V));
-
     if (ierr != xf_OK) return NULL;
 
+    // Build the outputs.
     return Py_BuildValue("n", V);
 }
 
@@ -259,20 +260,21 @@ px_GetPrimalState(PyObject *self, PyObject *args)
 
     // Get the pointer from Python.
     if (!PyArg_ParseTuple(args, "ni", &All, &TimeIndex)) return NULL;
-
+    
+    // Find the primal state.
     ierr = xf_FindPrimalState(All->DataSet, TimeIndex, &D, NULL);
-
     if (ierr != xf_OK) return NULL;
 
     // Quick sanity check and backward compatibility clause
     if (D->Type == xfe_VectorGroup)
+        // Find the vector group (has no effect)
         UG = (xf_VectorGroup *)D->Data;
     else if (D->Type != xfe_Vector) {
         ierr = xf_Error(xf_WrapVectorInGroup(D->Data, &UG));
-
         if (ierr != xf_OK) return NULL;
     } else return NULL;
 
+    // Outputs
     return Py_BuildValue("n", (xf_VectorGroup *)D->Data);
 }
 
